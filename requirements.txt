@@ -1,4 +1,4 @@
-# requirements.txt - Download in terminal using:
+# Use if you dont have conda installed and want to use venv instead:
 # pip install -r requirements.txt
 
 numpy==1.23.5
