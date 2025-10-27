@@ -1,0 +1,57 @@
+This will tell AI how the project works, mention what your part is
+what folders and files you need to work on and take it from there.
+
+TrueSight_a/
+├── .vscode/
+│   ├── settings.json
+│   └── launch.json
+├── data/
+│   ├── raw/
+│   ├── processed/
+│   └── datasets/
+├── models/
+│   ├── checkpoints/
+│   ├── trained/
+│   └── pretrained/
+├── src/
+│   ├── __init__.py
+│   ├── preprocessing/
+│   │   ├── __init__.py
+│   │   ├── video_decoder.py
+│   │   ├── face_detection.py
+│   │   └── transforms.py
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── spatial_cnn.py
+│   │   ├── frequency_cnn.py
+│   │   ├── spatiotemporal_lstm.py
+│   │   └── ensemble.py
+│   ├── training/
+│   │   ├── __init__.py
+│   │   ├── train.py
+│   │   └── evaluate.py
+│   ├── utils/
+│   │   ├── __init__.py
+│   │   ├── device.py
+│   │   ├── metrics.py
+│   │   └── visualization.py
+│   └── app/
+│       ├── __init__.py
+│       └── streamlit_app.py
+├── notebooks/
+│   └── experiments/
+├── configs/
+│   ├── config.yaml
+│   └── paths.py
+├── logs/
+├── results/
+├── tests/
+│   └── __init__.py
+├── .gitignore
+├── requirements.txt
+├── setup_env.sh
+├── test_gpu.py
+├── verify_env.py
+├── README.md
+└── LICENSE
+

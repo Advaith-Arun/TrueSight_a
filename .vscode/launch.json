@@ -1,0 +1,37 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            }
+        },
+        {
+            "name": "Python: Training Script",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/training/train.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--config",
+                "configs/config.yaml"
+            ]
+        },
+        {
+            "name": "Python: Streamlit App",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "streamlit",
+            "args": [
+                "run",
+                "src/app/streamlit_app.py"
+            ]
+        }
+    ]
+}
