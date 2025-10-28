@@ -7,6 +7,29 @@ data:
   test_split: 0.1
   frame_size: [224, 224]
   num_frames: 32
+  # configs/config.yaml
+
+# ------------------------------------
+# PREPROCESSING & DATA CONFIGURATION
+# ------------------------------------
+
+# Data Selection (Based on your request to use a subset)
+# This controls the initial selection of videos from the RAW paths.
+data_selection:
+  video_limit_per_dataset_type: 20  # Max videos to select from each real/fake group (e.g., 20 Real FF++, 20 Fake FF++, 20 Real Celeb-DF, etc.)
+  random_seed: 42                   # Crucial for reproducible splits
+
+# Data Splits (Applied at the *video* level on the selected subset)
+data_split:
+  train_ratio: 0.7                  # 70% of selected videos for training
+  val_ratio: 0.15                   # 15% for validation
+  test_ratio: 0.15                  # 15% for final testing
+
+# Preprocessing Parameters (Applied to frames/faces)
+preprocessing:
+  target_face_size: 256             # Output size for cropped faces (e.g., 256x256)
+  frame_sample_rate: 5              # Process 1 frame out of every 5 (to save time/storage)
+  face_margin: 0.3                  # Add 30% margin around the detected face bounding box
 
 # Model Configuration
 model:
@@ -54,3 +77,5 @@ app:
   title: "TrueSight: Deepfake Detection"
   max_upload_size_mb: 500
   enable_gradcam: true
+
+
