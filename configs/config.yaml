@@ -1,12 +1,12 @@
 # Dataset Configuration
 data:
   dataset_name: "FaceForensics++"
-  dataset_path: "data/datasets/faceforensics"
+  dataset_path: "data/splits/" 
   train_split: 0.8
   val_split: 0.1
   test_split: 0.1
   frame_size: [224, 224]
-  num_frames: 32
+  num_frames: 16
 
 # Model Configuration
 model:
@@ -14,19 +14,26 @@ model:
     backbone: "resnet50"
     pretrained: true
     num_classes: 2
+    feature_dim: 512
   frequency:
     backbone: "efficientnet_b0"
     pretrained: true
     num_classes: 2
+    feature_dim: 256
   spatiotemporal:
     cnn_backbone: "resnet50"
     lstm_hidden_size: 512
     lstm_num_layers: 2
     dropout: 0.3
+    bidirectional: true
+  ensemble:
+    fusion_method: "concatenate"
+    classifier_hidden: 256
 
 # Training Configuration
 training:
-  batch_size: 16
+  batch_size: 2          
+  num_frames: 8           
   num_epochs: 50
   learning_rate: 0.0001
   optimizer: "adam"
@@ -34,7 +41,10 @@ training:
   weight_decay: 0.0001
   grad_clip: 1.0
   early_stopping_patience: 10
-  mixed_precision: true
+  mixed_precision: true   
+  device: "cuda"
+  num_workers: 2          
+  pin_memory: true
 
 # Evaluation Configuration
 evaluation:
@@ -54,3 +64,20 @@ app:
   title: "TrueSight: Deepfake Detection"
   max_upload_size_mb: 500
   enable_gradcam: true
+
+# Paths Configuration
+paths:
+  data_root: "data/splits/"  
+  train_csv: "data/splits/train.csv"  
+  val_csv: "data/splits/val.csv"  
+  test_csv: "data/splits/test.csv"  
+  
+  model_checkpoints: "models/checkpoints/"
+  trained_models: "models/trained/"
+  logs: "logs/tensorboard/"
+  results: "results/"
+
+# Experiment tracking
+experiment:
+  name: "truesight_v1"
+  seed: 42

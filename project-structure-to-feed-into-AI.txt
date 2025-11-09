@@ -6,9 +6,14 @@ TrueSight_a/
 │   ├── settings.json
 │   └── launch.json
 ├── data/
-│   ├── raw/
-│   ├── processed/
-│   └── datasets/
+│   ├── splits/
+│   │   ├── test/
+│   │   ├── train/
+│   │   ├── val/
+│   │   ├── dataset_manifest.csv
+│   │   ├── test.csv
+│   │   ├── train.csv
+│   │   └── val.csv 
 ├── models/
 │   ├── checkpoints/
 │   ├── trained/
