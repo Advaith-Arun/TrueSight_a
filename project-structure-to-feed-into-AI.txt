@@ -1,64 +1,53 @@
 TrueSight_a/
-├── .vscode/
-│   ├── settings.json
-│   └── launch.json
-├── data/
-│   ├── test/
-│   │   ├── fake/
-│   │   └── real/
+├── configs/
+│   ├── config.yaml              # Central configuration
+│   └── paths.py                 # Path configurations
+│
+├── data/                        # Training/test datasets
 │   ├── train/
-│   │   ├── fake/
-│   │   └── real/
 │   ├── val/
-│   │   ├── fake/
-│   │   └── real/
-│   │
+│   └── test/
 │
 ├── models/
 │   ├── checkpoints/
+│   │   └── best_model.pth      # Trained model (473 MB)
 │   ├── trained/
 │   └── pretrained/
+│
 ├── src/
-│   ├── __init__.py
-│   ├── preprocessing/
-│   │   ├── __init__.py
-│   │   ├── video_decoder.py
-│   │   ├── face_detection.py
-│   │   └── transforms.py
-│   ├── models/
-│   │   ├── __init__.py
-│   │   ├── spatial_cnn.py
-│   │   ├── frequency_cnn.py
-│   │   ├── spatiotemporal_lstm.py
-│   │   └── ensemble.py
-│   ├── training/
-│   │   ├── __init__.py
-│   │   ├── train.py
-│   │   └── evaluate.py
-│   ├── utils/
-│   │   ├── __init__.py
-│   │   ├── device.py
-│   │   ├── metrics.py
-│   │   └── visualization.py
-│   └── app/
+│   ├── models/                  # Person 1's work
+│   │   ├── spatial_cnn.py      # ResNet-50 branch
+│   │   ├── frequency_cnn.py    # EfficientNet branch
+│   │   ├── spatiotemporal_lstm.py # LSTM branch
+│   │   └── ensemble.py         # Three-stream ensemble
+│   │
+│   ├── preprocessing/           # Person 2's work
+│   │   ├── preprocess_final.py # Complete preprocessing pipeline
+│   │   └── transforms.py       # Image transformations
+│   │
+│   └── app/                     # Person 3's work (YOU)
 │       ├── __init__.py
-│       └── streamlit_app.py
-├── notebooks/
-│   └── experiments/
-├── configs/
-│   ├── config.yaml
-│   └── paths.py
-├── logs/tensorboard
+│       ├── api.py              # Flask REST API
+│       ├── celery_config.py    # Celery configuration
+│       ├── tasks.py            # Async processing tasks
+│       ├── video_processor.py  # Video processing wrapper
+│       ├── inference.py        # ML inference engine
+│       ├── database.py         # Database models & operations
+│       ├── run_api.py          # API server runner
+│       ├── run_celery.py       # Celery worker runner
+│       ├── uploads/            # Temporary video storage
+│       └── temp_processing/    # Temporary frame storage
+│
 ├── results/
-├── tests/
-│   └── __init__.py
+│   └── truesight.db            # SQLite database
+│
 ├── testing_files/
-│   ├── test_dataset_loader.py
-│   ├── test_gpu.py
-│   └── verify_env.py
-├── .gitignore
+│   ├── test_imports.py
+│   ├── test_video_processor.py
+│   ├── test_inference.py
+│   ├── test_database.py
+│   ├── test_celery_task.py
+│   └── test_api.py
+│
 ├── requirements.txt
-├── setup_env.sh
-├── README.md
-└── LICENSE
-
+└── README.md

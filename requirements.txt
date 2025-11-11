@@ -69,3 +69,15 @@ mypy==1.8.0
 # Security Scanning
 bandit==1.7.6
 safety==3.0.1
+
+# Async Task Processing (ADD THESE)
+celery==5.3.4
+redis==5.0.1
+
+# Database ORM (ADD THESE)
+flask-sqlalchemy==3.1.1
+
+# API Utilities (ADD THESE)
+python-multipart==0.0.9
+
+flask-cors==4.0.0
