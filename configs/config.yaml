@@ -1,13 +1,12 @@
 # Dataset Configuration
 data:
-  dataset_name: "FaceForensics++"
-  dataset_path: "data/splits/" 
+  dataset_name: "FaceForensics++ & Celeb-DF"
+  dataset_path: "data/"
   train_split: 0.8
   val_split: 0.1
   test_split: 0.1
   frame_size: [224, 224]
-  num_frames: 16
-
+  num_frames: 8 
 
 # Model Configuration
 model:
@@ -16,42 +15,46 @@ model:
     pretrained: true
     num_classes: 2
     feature_dim: 512
+  
   frequency:
     backbone: "efficientnet_b0"
     pretrained: true
     num_classes: 2
     feature_dim: 256
+  
   spatiotemporal:
     cnn_backbone: "resnet50"
     lstm_hidden_size: 512
     lstm_num_layers: 2
-    dropout: 0.3
+    dropout: 0.7 
     bidirectional: true
+  
   ensemble:
     fusion_method: "concatenate"
-    classifier_hidden: 256
+    classifier_hidden: 128
 
 # Training Configuration
 training:
-  batch_size: 2          
-  num_frames: 8           
-  num_epochs: 50
-  learning_rate: 0.0001
-  optimizer: "adam"
+  batch_size: 2
+  num_frames: 8
+  num_epochs: 100
+  learning_rate: 0.00002
+  optimizer: "adamw"
   scheduler: "cosine"
-  weight_decay: 0.0001
-  grad_clip: 1.0
-  early_stopping_patience: 10
-  mixed_precision: true   
+  weight_decay: 0.001    
+  grad_clip: 0.5         
+  early_stopping_patience: 20 
+  mixed_precision: true
   device: "cuda"
-  num_workers: 2          
+  num_workers: 2
   pin_memory: true
 
 # Evaluation Configuration
 evaluation:
-  metrics: ["auc_roc", "auprc", "f1", "accuracy", "fpr_at_95_tpr"]
+  metrics: ["accuracy", "precision", "recall", "f1", "auc_roc", "auprc", "fpr_at_95_tpr"]
   calibration: true
   save_confusion_matrix: true
+  save_roc_curve: true
 
 # Logging Configuration
 logging:
@@ -59,6 +62,7 @@ logging:
   checkpoint_dir: "models/checkpoints"
   log_interval: 10
   save_interval: 5
+  verbose: true
 
 # Application Configuration
 app:
@@ -68,17 +72,22 @@ app:
 
 # Paths Configuration
 paths:
-  data_root: "data/splits/"  
-  train_csv: "data/splits/train.csv"  
-  val_csv: "data/splits/val.csv"  
-  test_csv: "data/splits/test.csv"  
-  
+  data_root: "data/"
   model_checkpoints: "models/checkpoints/"
   trained_models: "models/trained/"
+  pretrained_models: "models/pretrained/"
   logs: "logs/tensorboard/"
   results: "results/"
 
-# Experiment tracking
+# Experiment Tracking
 experiment:
-  name: "truesight_v1"
+  name: "truesight_phase1_focal_augmentation"
   seed: 42
+  notes: "Focal loss + strong augmentation + regularization"
+
+# Hardware Configuration
+hardware:
+  gpu_name: "RTX 4060 Laptop"
+  gpu_memory: "8GB"
+  use_cuda: true
+  cuda_benchmark: true

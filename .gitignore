@@ -15,8 +15,7 @@ dist/
 build/
 
 # Data Files
-data/raw/*
-data/processed/*
+/data/
 *.mp4
 *.avi
 *.mov

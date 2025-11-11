@@ -1,19 +1,19 @@
-This will tell AI how the project works, mention what your part is
-what folders and files you need to work on and take it from there.
-
 TrueSight_a/
 ├── .vscode/
 │   ├── settings.json
 │   └── launch.json
 ├── data/
-│   ├── splits/
-│   │   ├── test/
-│   │   ├── train/
-│   │   ├── val/
-│   │   ├── dataset_manifest.csv
-│   │   ├── test.csv
-│   │   ├── train.csv
-│   │   └── val.csv 
+│   ├── test/
+│   │   ├── fake/
+│   │   └── real/
+│   ├── train/
+│   │   ├── fake/
+│   │   └── real/
+│   ├── val/
+│   │   ├── fake/
+│   │   └── real/
+│   │
+│
 ├── models/
 │   ├── checkpoints/
 │   ├── trained/
@@ -48,15 +48,17 @@ TrueSight_a/
 ├── configs/
 │   ├── config.yaml
 │   └── paths.py
-├── logs/
+├── logs/tensorboard
 ├── results/
 ├── tests/
 │   └── __init__.py
+├── testing_files/
+│   ├── test_dataset_loader.py
+│   ├── test_gpu.py
+│   └── verify_env.py
 ├── .gitignore
 ├── requirements.txt
 ├── setup_env.sh
-├── test_gpu.py
-├── verify_env.py
 ├── README.md
 └── LICENSE
 

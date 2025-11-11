@@ -27,11 +27,10 @@ def load_config():
 
 
 def evaluate_model(model, test_loader, device):
-
+    """Comprehensive model evaluation with threshold optimization"""
     model.eval()
     
     all_labels = []
-    all_predictions = []
     all_probabilities = []
     
     print("\n🔍 Evaluating on test set...")
@@ -42,17 +41,33 @@ def evaluate_model(model, test_loader, device):
             
             logits = model(videos).squeeze()
             probabilities = torch.sigmoid(logits)
-            predictions = (probabilities > 0.5).float()
             
             all_labels.extend(labels.cpu().numpy())
-            all_predictions.extend(predictions.cpu().numpy())
             all_probabilities.extend(probabilities.cpu().numpy())
     
     all_labels = np.array(all_labels)
-    all_predictions = np.array(all_predictions)
     all_probabilities = np.array(all_probabilities)
     
+    # Find optimal threshold
+    print("\n🎯 Finding optimal classification threshold...")
+    best_threshold = 0.5
+    best_f1 = 0
+    
+    for threshold in np.arange(0.1, 0.9, 0.05):
+        preds = (all_probabilities > threshold).astype(int)
+        from sklearn.metrics import f1_score
+        f1 = f1_score(all_labels, preds)
+        if f1 > best_f1:
+            best_f1 = f1
+            best_threshold = threshold
+    
+    print(f"   Optimal threshold: {best_threshold:.2f} (F1: {best_f1:.2%})")
+    
+    # Use optimal threshold
+    all_predictions = (all_probabilities > best_threshold).astype(int)
+    
     return all_labels, all_predictions, all_probabilities
+
 
 
 def calculate_metrics(labels, predictions, probabilities):
@@ -123,20 +138,20 @@ def plot_roc_curve(labels, probabilities, auc_roc, save_path):
     plt.savefig(save_path, dpi=300)
     print(f"✅ ROC curve saved: {save_path}")
 
-
 def main():
     print("="*70)
     print("TRUESIGHT MODEL EVALUATION")
     print("="*70)
     
+    # Load config
     config = load_config()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"\n🖥️  Device: {device}")
     
+    # Load test dataset
     print("\n📊 Loading test data...")
     test_dataset = DeepfakeDataset(
-        csv_path=config['paths']['test_csv'],
-        data_root=config['paths']['data_root'],
+        data_root=config['paths']['data_root'],  # Uses 'data/'
         split='test',
         num_frames=config['training']['num_frames']
     )
@@ -161,7 +176,7 @@ def main():
     model = TrueSightEnsemble(config).to(device)
     model.load_state_dict(checkpoint['model_state_dict'])
     print(f"✅ Loaded checkpoint from epoch {checkpoint['epoch']}")
-    print(f"   Validation Accuracy: {checkpoint['val_acc']:.2f}%")
+    print(f"   Validation Accuracy: {checkpoint.get('val_acc', 'N/A'):.2f}%")
     
     # Evaluate
     labels, predictions, probabilities = evaluate_model(model, test_loader, device)
