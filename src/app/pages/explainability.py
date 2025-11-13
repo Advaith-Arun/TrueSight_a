@@ -1,98 +1,80 @@
 import streamlit as st
-from streamlit_app import COLOR_RED, COLOR_GREEN, COLOR_TEXT_BODY
-from components.video_player import render_video_player
 import numpy as np
+import cv2
 
-# --- PLACEHOLDERS FOR MISSING BACKEND DATA (CRITICAL GAP) ---
-# Backend does not yet expose frame images or Grad-CAM heatmaps.
-def get_fake_grad_cam_data():
-    """Generates placeholder data for the 8 missing Grad-CAM images."""
-    if st.session_state.verdict == 'Fake':
-        # Create 8 unique placeholder arrays (simulate 224x224 grayscale images)
-        return [np.random.rand(224, 224) for _ in range(8)]
-    return None
+# Define colors locally
+COLOR_RED = "#E60000"
+COLOR_GREEN = "#00C853"
 
-def render_explainability():
+def render_explainability(backend_url):
     """
-    Renders the conditional Explainability (Grad-CAM) visualization page.
-    Explainability is ONLY active for FAKE verdicts.
+    Renders the explainability page with Grad-CAM visualization.
+    Only shown when verdict is 'Fake' (placeholder for now).
     """
-    verdict = st.session_state.verdict
+    st.markdown(f"<h2 style='font-family: Orbitron; color: {COLOR_RED};'>Forensic Visualization</h2>", unsafe_allow_html=True)
     
-    st.markdown(f"## Forensic Visualization & Explainability", unsafe_allow_html=True)
-    st.markdown("---")
-
-    if not verdict:
-         st.warning("Please run an analysis first on the Upload page.")
-         return
-
-    # --- 1. REAL VERDICT (Disabled Explainability) ---
-    if verdict == 'Real':
-        st.markdown(
-            f"<h3 style='color:{COLOR_GREEN}; font-family:Orbitron'>Authenticity Verified</h3>",
-            unsafe_allow_html=True
-        )
-        st.markdown(
-            f"<div style='border: 2px solid {COLOR_GREEN}; padding: 30px; border-radius: 10px; text-align: center;'>"+
-            f"<p style='color:{COLOR_TEXT_BODY}; font-size:18px;'>No explainability visualizations are required — this video is verified as **Real**.</p>"+
-            f"<p style='color:{COLOR_GREEN}; font-family:Roboto;'>The Green theme confirms the system's high confidence in authenticity.</p></div>",
-            unsafe_allow_html=True
-        )
-        # Placeholder for system charts (not visualization)
-        # render_metrics_charts() 
+    if st.session_state.get('verdict') == 'Real':
+        st.success("✅ **Authenticity Verified**")
+        st.info("This video passed all forensic checks. No manipulation artifacts detected.")
+        st.markdown("---")
+        st.markdown("""
+        ### Why No Visualization?
+        Real (authentic) videos do not exhibit the telltale patterns that deepfake models look for.
+        Grad-CAM heatmaps are only generated for videos classified as **Fake**, where we can
+        highlight suspicious regions (e.g., around the mouth, eyes, or facial boundaries).
+        """)
         return
-
-    # --- 2. FAKE VERDICT (Active Explainability) ---
-    elif verdict == 'Fake':
-        st.markdown(
-            f"<h3 style='color:{COLOR_RED}; font-family:Orbitron'>Deepfake Artifact Tracing (Grad-CAM)</h3>",
-            unsafe_allow_html=True
-        )
-        
-        # Placeholder: Assume Grad-CAM data is retrieved
-        grad_cam_data = get_fake_grad_cam_data() 
-        if not grad_cam_data:
-            st.error("⚠️ CRITICAL: Grad-CAM data not available for this job ID. Backend did not return heatmaps.")
-            return
-
-        # Visualization Controls (Red/Black theme)
-        col_ctrl, col_viz = st.columns([1, 2])
-        
-        with col_ctrl:
-            st.markdown(f"**Visualization Controls**", unsafe_allow_html=True)
-            
-            # Overlay Opacity Slider
-            overlay_opacity = st.slider(
-                "Heatmap Opacity", 0.0, 1.0, 0.7, 0.05,
-                help="Adjust the transparency of the Grad-CAM heatmap overlay."
-            )
-            
-            # Frame Scrubber (Simulated for 8 frames)
-            frame_index = st.slider(
-                "Frame Scrubber (8 Analyzed Frames)", 0, 7, 0, 1,
-                help="The model analyzed 8 frames. Scrub to see frame-level artifacts."
-            )
-            
-            # Export Controls
-            if st.button("Export Keyframe (PNG)", key="export_frame_btn"):
-                 st.info("Exporting keyframe... (Client-side screenshot initiated)")
-            
-            st.markdown("---")
-            st.markdown(f"**Interpretation:** Red areas indicate high model focus/suspicion on fake artifacts (e.g., blending seams, texture inconsistencies).", unsafe_allow_html=True)
-        
-        # Side-by-Side View (Requires Video Player)
-        with col_viz:
-            st.markdown(f"**Frame {frame_index + 1} / 8**", unsafe_allow_html=True)
-            
-            # Placeholder: Video Player is used to show the frame and overlay
-            render_video_player(
-                video_source=st.session_state.job_result['filename'],
-                verdict=verdict,
-                current_frame_index=frame_index,
-                grad_cam_frames=grad_cam_data,
-                opacity=overlay_opacity,
-                is_real_source=False # Tells player to display the fake visualization
-            )
-            
-            # Simple Side-by-Side Text
-            st.markdown("<p style='text-align:center;'>Side-by-Side View: Processed Crop vs. Heatmap Overlay</p>", unsafe_allow_html=True)
+    
+    elif st.session_state.get('verdict') != 'Fake':
+        st.warning("⚠️ No analysis results available yet. Please upload and analyze a video first.")
+        return
+    
+    # FAKE verdict - Show explainability
+    st.markdown(f"""
+    <p style='color: {COLOR_RED}; font-family: Orbitron;'>
+    ⚠️ MANIPULATION DETECTED | Displaying forensic heatmap overlay
+    </p>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("### Frame-by-Frame Analysis")
+    st.info("🔬 **Note**: Grad-CAM visualization is currently using placeholder data. Full implementation pending model finalization.")
+    
+    # Generate placeholder Grad-CAM data (8 frames)
+    grad_cam_frames = []
+    for i in range(8):
+        heatmap = np.random.rand(224, 224)
+        grad_cam_frames.append(heatmap)
+    
+    # Simple frame scrubber
+    frame_idx = st.slider("Select Frame", min_value=0, max_value=7, value=0, key="frame_scrubber")
+    
+    # Display heatmap
+    heatmap_data = grad_cam_frames[frame_idx]
+    heatmap_rgb = cv2.applyColorMap((heatmap_data * 255).astype(np.uint8), cv2.COLORMAP_JET)
+    
+    st.image(heatmap_rgb, caption=f"Frame {frame_idx + 1}/8 - Grad-CAM Heatmap", use_column_width=True)
+    
+    # Explainability controls
+    st.markdown("---")
+    st.markdown("### Analysis Controls")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        opacity = st.slider("Heatmap Opacity", min_value=0.0, max_value=1.0, value=0.5, step=0.1)
+        st.info(f"Current opacity: {opacity}")
+    
+    with col2:
+        show_grid = st.checkbox("Show Grid Overlay", value=False)
+        if show_grid:
+            st.success("Grid overlay enabled")
+    
+    # Export options
+    st.markdown("---")
+    st.markdown("### Export Options")
+    
+    if st.button("📸 Export Current Frame (PNG)", key="export_png"):
+        st.info("Screenshot export functionality coming soon!")
+    
+    if st.button("📊 Generate Analysis Report (PDF)", key="export_pdf"):
+        st.info("PDF report generation coming soon!")

@@ -1,7 +1,9 @@
 import streamlit as st
 import numpy as np
 import cv2
-from streamlit_app import COLOR_RED, COLOR_GREEN, COLOR_TEXT_BODY
+# Define colors locally
+COLOR_RED = "#E60000"
+COLOR_GREEN = "#00C853"
 
 def render_video_player(video_source, verdict, current_frame_index, grad_cam_frames=None, opacity=1.0, is_real_source=True):
     """

@@ -274,7 +274,10 @@ def get_results(job_id: str):
         }), 400
     
     # Return complete results
-    response = job.to_dict()
+    response = job.to_dict()     
+                       
+    # Add threshold field (CRITICAL - required by frontend)
+    response['threshold'] = 0.3  # ✅ Add this line
     
     logger.info(f"Returning results for job {job_id}: {job.verdict}")
     return jsonify(response), 200
