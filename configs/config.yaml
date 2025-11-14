@@ -1,3 +1,12 @@
+# Configuration Files
+
+## config.yaml
+#DO NOT MODIFY DIRECTLY DURING TRAINING!
+
+#This file is used by the API/backend. If you change it, the backend breaks.
+
+## For Training: Use config_training.yaml
+
 # Dataset Configuration
 data:
   dataset_name: "FaceForensics++ & Celeb-DF Mixed Training"
