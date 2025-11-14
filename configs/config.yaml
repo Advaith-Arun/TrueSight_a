@@ -12,13 +12,13 @@ model:
     pretrained: true
     num_classes: 2
     feature_dim: 512
-  
+
   frequency:
     backbone: "efficientnet_b0"
     pretrained: true
     num_classes: 2
     feature_dim: 256
-  
+
   spatiotemporal:
     cnn_backbone: "resnet50"
     lstm_hidden_size: 512
@@ -34,8 +34,8 @@ model:
 training:
   batch_size: 4
   num_frames: 8
-  num_epochs: 100            # INCREASED
-  learning_rate: 0.00003      # REVERTED
+  num_epochs: 100 # INCREASED
+  learning_rate: 0.00003 # REVERTED
   optimizer: "adamw"
   scheduler: "cosine"
   weight_decay: 0.001
@@ -47,11 +47,20 @@ training:
   num_workers: 4
   pin_memory: true
   warmup_epochs: 3
-  min_lr: 0.000001           # REVERTED
+  min_lr: 0.000001 # REVERTED
 
 # Evaluation Configuration
 evaluation:
-  metrics: ["accuracy", "precision", "recall", "f1", "auc_roc", "auprc", "fpr_at_95_tpr"]
+  metrics:
+    [
+      "accuracy",
+      "precision",
+      "recall",
+      "f1",
+      "auc_roc",
+      "auprc",
+      "fpr_at_95_tpr",
+    ]
   calibration: true
   save_confusion_matrix: true
   save_roc_curve: true
@@ -78,3 +87,12 @@ hardware:
   gpu_memory: "8GB"
   use_cuda: true
   cuda_benchmark: true
+
+# ✅ ADD THIS SECTION (MISSING!)
+# Application Configuration (for API/Inference)
+app:
+  max_upload_size_mb: 500
+  allowed_extensions: ["mp4", "avi", "mov"]
+  inference_threshold: 0.3 # CRITICAL: Use 0.3, not 0.5
+  batch_size: 1
+  num_workers: 2
