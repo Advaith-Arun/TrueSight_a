@@ -1,12 +1,9 @@
 # Dataset Configuration
 data:
-  dataset_name: "FaceForensics++ & Celeb-DF"
-  dataset_path: "data/"
-  train_split: 0.8
-  val_split: 0.1
-  test_split: 0.1
+  dataset_name: "FaceForensics++ & Celeb-DF Mixed Training"
+  dataset_path: "data_processed/"
   frame_size: [224, 224]
-  num_frames: 8 
+  num_frames: 8
 
 # Model Configuration
 model:
@@ -26,28 +23,31 @@ model:
     cnn_backbone: "resnet50"
     lstm_hidden_size: 512
     lstm_num_layers: 2
-    dropout: 0.7 
+    dropout: 0.3
     bidirectional: true
-  
+
   ensemble:
     fusion_method: "concatenate"
-    classifier_hidden: 128
+    classifier_hidden: 256
 
 # Training Configuration
 training:
-  batch_size: 2
+  batch_size: 4
   num_frames: 8
-  num_epochs: 100
-  learning_rate: 0.00002
+  num_epochs: 100            # INCREASED
+  learning_rate: 0.00003      # REVERTED
   optimizer: "adamw"
   scheduler: "cosine"
-  weight_decay: 0.001    
-  grad_clip: 0.5         
-  early_stopping_patience: 20 
+  weight_decay: 0.001
+  mixup_alpha: 1.0
+  grad_clip: 1.0
+  early_stopping_patience: 25 # INCREASED
   mixed_precision: true
   device: "cuda"
-  num_workers: 2
+  num_workers: 4
   pin_memory: true
+  warmup_epochs: 3
+  min_lr: 0.000001           # REVERTED
 
 # Evaluation Configuration
 evaluation:
@@ -55,24 +55,11 @@ evaluation:
   calibration: true
   save_confusion_matrix: true
   save_roc_curve: true
-
-# Logging Configuration
-logging:
-  tensorboard_dir: "logs/tensorboard"
-  checkpoint_dir: "models/checkpoints"
-  log_interval: 10
-  save_interval: 5
-  verbose: true
-
-# Application Configuration
-app:
-  title: "TrueSight: Deepfake Detection"
-  max_upload_size_mb: 500
-  enable_gradcam: true
+  threshold: 0.5
 
 # Paths Configuration
 paths:
-  data_root: "data/"
+  data_root: "data_processed/"
   model_checkpoints: "models/checkpoints/"
   trained_models: "models/trained/"
   pretrained_models: "models/pretrained/"
@@ -81,9 +68,9 @@ paths:
 
 # Experiment Tracking
 experiment:
-  name: "truesight_phase1_focal_augmentation"
+  name: "truesight_900videos_mixed_training_fixed"
   seed: 42
-  notes: "Focal loss + strong augmentation + regularization"
+  notes: "900 videos with warmup scheduler and proper threshold"
 
 # Hardware Configuration
 hardware:

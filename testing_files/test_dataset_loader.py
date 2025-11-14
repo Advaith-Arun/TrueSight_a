@@ -21,7 +21,7 @@ def test_dataset():
         
         try:
             dataset = DeepfakeDataset(
-                data_root='data',  # ← CHANGED
+                data_root='data_processed',  # ← CHANGED
                 split=split,
                 num_frames=8
             )

@@ -27,5 +27,6 @@
     "python.analysis.extraPaths": [
         "./src",
         "./src"
-    ]
+    ],
+    "git.ignoreLimitWarning": true
 }

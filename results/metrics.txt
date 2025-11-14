@@ -1,14 +1,14 @@
 TrueSight Model Evaluation Results
 ==================================================
 
-Accuracy:  70.00%
-Precision: 65.62%
-Recall:    84.00%
-F1-Score:  73.68%
-AUC-ROC:   69.76%
-FPR@95%TPR: 64.00%
+Accuracy:  62.97%
+Precision: 79.54%
+Recall:    34.92%
+F1-Score:  48.53%
+AUC-ROC:   69.11%
+FPR@95%TPR: 83.90%
 
-True Negatives:  14
-False Positives: 11
-False Negatives: 4
-True Positives:  21
+True Negatives:  537
+False Positives: 53
+False Negatives: 384
+True Positives:  206

@@ -17,57 +17,33 @@ sys.path.append(str(Path(__file__).parent.parent))
 from models.ensemble import TrueSightEnsemble
 from preprocessing.dataset import DeepfakeDataset
 
-class FocalLoss(nn.Module):
-    
-    def __init__(self, alpha=0.25, gamma=2.0, smoothing=0.1):
-        super(FocalLoss, self).__init__()
-        self.alpha = alpha
-        self.gamma = gamma
-        self.smoothing = smoothing
-        
-    def forward(self, inputs, targets):
-        # Label smoothing: 0 → 0.1, 1 → 0.9
-        targets_smooth = targets * (1 - self.smoothing) + 0.5 * self.smoothing
-        
-        # BCE loss with smoothed labels
-        BCE_loss = F.binary_cross_entropy_with_logits(
-            inputs, targets_smooth, reduction='none'
-        )
-        
-        # Focal weight
-        pt = torch.exp(-BCE_loss)
-        focal_weight = (1 - pt) ** self.gamma
-        
-        # Final loss
-        focal_loss = self.alpha * focal_weight * BCE_loss
-        
-        return focal_loss.mean()
+# Global variable for warmup steps (needed in train_epoch)
+warmup_steps = 0
+scheduler = None
+config = None
 
-
-def mixup_data(x, y, alpha=0.2):
-
+# --- NEW MIXUP FUNCTION ---
+def mixup_data(x, y, alpha=1.0, device='cuda'):
+    '''Returns mixed inputs, pairs of targets, and lambda'''
     if alpha > 0:
         lam = np.random.beta(alpha, alpha)
     else:
         lam = 1
-    
+
     batch_size = x.size()[0]
-    index = torch.randperm(batch_size).to(x.device)
-    
-    # Mix inputs
+    index = torch.randperm(batch_size).to(device)
+
     mixed_x = lam * x + (1 - lam) * x[index, :]
     y_a, y_b = y, y[index]
-    
     return mixed_x, y_a, y_b, lam
-
 
 def mixup_criterion(criterion, pred, y_a, y_b, lam):
     return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
+# --- END MIXUP ---
 
 
 def load_config(config_path=None):
     if config_path is None:
-        # Get project root (3 levels up from train.py)
         project_root = Path(__file__).parent.parent.parent
         config_path = project_root / 'configs' / 'config.yaml'
     
@@ -81,13 +57,10 @@ def load_config(config_path=None):
         with open(config_path, 'r', encoding='utf-8') as f:
             return yaml.safe_load(f)
     except UnicodeDecodeError:
-        # if UTF-8 doesn't work
         with open(config_path, 'r', encoding='latin-1') as f:
             return yaml.safe_load(f)
 
-
 def create_dataloaders(config):
-
     train_dataset = DeepfakeDataset(
         data_root=config['paths']['data_root'],
         split='train',
@@ -104,8 +77,8 @@ def create_dataloaders(config):
         train_dataset,
         batch_size=config['training']['batch_size'],
         shuffle=True,
-        num_workers=2,
-        pin_memory=True,
+        num_workers=config['training']['num_workers'],
+        pin_memory=config['training']['pin_memory'],
         drop_last=True
     )
     
@@ -113,8 +86,8 @@ def create_dataloaders(config):
         val_dataset,
         batch_size=config['training']['batch_size'],
         shuffle=False,
-        num_workers=2,
-        pin_memory=True
+        num_workers=config['training']['num_workers'],
+        pin_memory=config['training']['pin_memory']
     )
     
     print(f"✅ Train: {len(train_dataset)} videos ({len(train_loader)} batches)")
@@ -122,9 +95,10 @@ def create_dataloaders(config):
     
     return train_loader, val_loader
 
-
-def train_epoch(model, train_loader, criterion, optimizer, device, epoch, scaler):
-    """Train for one epoch with mixup augmentation"""
+def train_epoch(model, train_loader, criterion, optimizer, device, epoch, scaler, mixup_alpha):
+    """Train for one epoch"""
+    global warmup_steps, scheduler, config
+    
     model.train()
     running_loss = 0.0
     correct = 0
@@ -135,52 +109,55 @@ def train_epoch(model, train_loader, criterion, optimizer, device, epoch, scaler
         videos = videos.to(device, non_blocking=True)
         labels = labels.to(device, non_blocking=True).float().unsqueeze(1)
         
-        # Apply mixup with 50% probability
-        use_mixup = np.random.random() > 0.5
-        if use_mixup:
-            videos, labels_a, labels_b, lam = mixup_data(videos, labels, alpha=0.2)
-        
         optimizer.zero_grad()
+        
+        # --- APPLY MIXUP ---
+        videos, targets_a, targets_b, lam = mixup_data(videos, labels, mixup_alpha, device)
+        # --- END MIXUP ---
         
         # Forward pass
         with autocast('cuda'):
             logits = model(videos)
-            
-            if use_mixup:
-                loss = mixup_criterion(criterion, logits, labels_a, labels_b, lam)
-            else:
-                loss = criterion(logits, labels)
+            loss = mixup_criterion(criterion, logits, targets_a, targets_b, lam)
         
         # Backward pass
         scaler.scale(loss).backward()
         scaler.unscale_(optimizer)
-        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.5)  # More aggressive
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=config['training']['grad_clip'])
         scaler.step(optimizer)
         scaler.update()
         
-        # Calculate metrics (only for non-mixup batches)
+        # Step scheduler per batch if using warmup
+        if warmup_steps > 0:
+            scheduler.step()
+        
+        # Calculate metrics
         running_loss += loss.item()
-        if not use_mixup:
-            with torch.no_grad():
-                predictions = (torch.sigmoid(logits) > 0.5).float()
-                correct += (predictions == labels).sum().item()
-                total += labels.size(0)
+        with torch.no_grad():
+            threshold = 0.5 # Using 0.5 threshold for accuracy calculation
+            predictions = (torch.sigmoid(logits) > threshold).float()
+            # Accuracy with mixup is tricky, we check against the dominant label
+            correct += (lam * (predictions == targets_a).sum().item() +
+                        (1 - lam) * (predictions == targets_b).sum().item())
+            total += labels.size(0)
         
         # Update progress bar
-        acc = 100. * correct / total if total > 0 else 0
+        current_acc = 100. * correct / total
         pbar.set_postfix({
-            'loss': running_loss / (batch_idx + 1),
-            'acc': acc
+            'loss': f'{running_loss / (batch_idx + 1):.4f}',
+            'acc': f'{current_acc:.2f}'
         })
     
     epoch_loss = running_loss / len(train_loader)
-    epoch_acc = 100. * correct / total if total > 0 else 0
+    epoch_acc = 100. * correct / total
     
     return epoch_loss, epoch_acc
 
 @torch.no_grad()
 def validate(model, val_loader, criterion, device):
-    """Validate model"""
+    """Validate model (no mixup in validation)"""
+    global config
+    
     model.eval()
     val_loss = 0.0
     correct = 0
@@ -194,7 +171,8 @@ def validate(model, val_loader, criterion, device):
         loss = criterion(logits, labels)
         
         val_loss += loss.item()
-        predictions = (torch.sigmoid(logits) > 0.5).float()
+        threshold = 0.5 # Using 0.5 threshold for accuracy calculation
+        predictions = (torch.sigmoid(logits) > threshold).float()
         correct += (predictions == labels).sum().item()
         total += labels.size(0)
     
@@ -203,28 +181,28 @@ def validate(model, val_loader, criterion, device):
     
     return val_loss, val_acc
 
-
 def main():
-
+    global warmup_steps, scheduler, config
+    
     print("="*70)
     print("TRUESIGHT TRAINING")
     print("="*70)
     
     config = load_config()
-
-    scaler = GradScaler('cuda')
+    
+    scaler = GradScaler(enabled=config['training']['mixed_precision'])
     
     device = torch.device(config['training']['device'] if torch.cuda.is_available() else 'cpu')
     print(f"\n🖥️  Device: {device}")
     if torch.cuda.is_available():
         print(f"   GPU: {torch.cuda.get_device_name(0)}")
         print(f"   Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.2f} GB")
-
+    
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
     
     Path(config['paths']['model_checkpoints']).mkdir(parents=True, exist_ok=True)
-    Path(config['logging']['tensorboard_dir']).mkdir(parents=True, exist_ok=True)
+    Path(config['paths']['logs']).mkdir(parents=True, exist_ok=True)
     
     print("\n📊 Loading data...")
     train_loader, val_loader = create_dataloaders(config)
@@ -234,18 +212,60 @@ def main():
     total_params = sum(p.numel() for p in model.parameters())
     print(f"   Parameters: {total_params:,} (~{total_params * 4 / 1024 / 1024:.2f} MB)")
     
-    criterion = FocalLoss(alpha=0.25, gamma=2.0, smoothing=0.1)
+    criterion = nn.BCEWithLogitsLoss()
+    print("✓ Using standard BCEWithLogitsLoss (Mixup will handle smoothing)")
+        
     optimizer = torch.optim.AdamW(
         model.parameters(),
         lr=config['training']['learning_rate'],
         weight_decay=config['training']['weight_decay']
     )
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer,
-        T_max=config['training']['num_epochs']
-    )
     
-    writer = SummaryWriter(log_dir=config['logging']['tensorboard_dir'])
+    # Warmup scheduler implementation
+    def get_cosine_schedule_with_warmup(optimizer, num_warmup_steps, num_training_steps, min_lr=1e-6):
+        """
+        Creates a schedule with linear warmup and cosine decay.
+        """
+        def lr_lambda(current_step):
+            if current_step < num_warmup_steps:
+                # Linear warmup
+                return float(current_step) / float(max(1, num_warmup_steps))
+            # Cosine annealing after warmup
+            progress = float(current_step - num_warmup_steps) / float(max(1, num_training_steps - num_warmup_steps))
+            cosine_decay = 0.5 * (1.0 + np.cos(np.pi * progress))
+            return max(min_lr / config['training']['learning_rate'], cosine_decay)
+        
+        return torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
+    
+    # Calculate total training steps
+    steps_per_epoch = len(train_loader)
+    total_training_steps = config['training']['num_epochs'] * steps_per_epoch
+    warmup_steps = config['training'].get('warmup_epochs', 0) * steps_per_epoch
+    
+    # Create scheduler with warmup
+    if warmup_steps > 0:
+        scheduler = get_cosine_schedule_with_warmup(
+            optimizer,
+            num_warmup_steps=warmup_steps,
+            num_training_steps=total_training_steps,
+            min_lr=config['training'].get('min_lr', 1e-6)
+        )
+        print(f"✓ Using Cosine Annealing with {config['training']['warmup_epochs']} epoch warmup")
+    else:
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer,
+            T_max=config['training']['num_epochs'] * steps_per_epoch
+        )
+        print("✓ Using Cosine Annealing (no warmup)")
+    
+    writer = SummaryWriter(log_dir=config['paths']['logs'])
+    
+    # Get Mixup alpha from config
+    mixup_alpha = config['training'].get('mixup_alpha', 0.0)
+    if mixup_alpha > 0.0:
+        print(f"✓ Using Mixup with alpha: {mixup_alpha}")
+    else:
+        print("✓ Not using Mixup")
     
     print(f"\nStarting training for {config['training']['num_epochs']} epochs...")
     best_val_acc = 0.0
@@ -257,14 +277,15 @@ def main():
         print(f"{'='*70}")
         
         train_loss, train_acc = train_epoch(
-            model, train_loader, criterion, optimizer, device, epoch, scaler
+            model, train_loader, criterion, optimizer, device, epoch, scaler, mixup_alpha
         )
         
         # Validate
         val_loss, val_acc = validate(model, val_loader, criterion, device)
         
-        # Step scheduler
-        scheduler.step()
+        # Step scheduler (only per epoch if NOT using warmup)
+        if warmup_steps == 0:
+            scheduler.step()
         
         # Log to TensorBoard
         writer.add_scalar('Loss/train', train_loss, epoch)
@@ -303,8 +324,8 @@ def main():
         else:
             patience_counter += 1
         
-        # Save periodic checkpoint
-        if epoch % config['logging']['save_interval'] == 0:
+        # Save periodic checkpoint every 5 epochs
+        if epoch % 5 == 0:
             torch.save(
                 checkpoint,
                 Path(config['paths']['model_checkpoints']) / f'checkpoint_epoch{epoch}.pth'
@@ -323,7 +344,6 @@ def main():
     print(f"   Best Validation Accuracy: {best_val_acc:.2f}%")
     print(f"   Model saved: {config['paths']['model_checkpoints']}/best_model.pth")
     print(f"{'='*70}")
-
 
 if __name__ == '__main__':
     main()

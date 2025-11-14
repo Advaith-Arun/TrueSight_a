@@ -1,5 +1,3 @@
-"""Test GPU setup for TrueSight project."""
-
 import torch
 import sys
 from pathlib import Path

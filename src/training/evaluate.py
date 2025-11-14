@@ -172,7 +172,7 @@ def main():
         print(f"❌ Model not found at: {checkpoint_path}")
         return
     
-    checkpoint = torch.load(checkpoint_path, map_location=device)
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
     model = TrueSightEnsemble(config).to(device)
     model.load_state_dict(checkpoint['model_state_dict'])
     print(f"✅ Loaded checkpoint from epoch {checkpoint['epoch']}")

@@ -16,6 +16,7 @@ build/
 
 # Data Files
 /data/
+/data_processed/
 *.mp4
 *.avi
 *.mov
@@ -26,12 +27,14 @@ build/
 
 # Models
 models/checkpoints/*.pth
+models/checkpoints/*.pth.backup
 models/trained/*.pth
 !models/checkpoints/.gitkeep
 !models/trained/.gitkeep
 
 # Logs
 logs/*.log
+logs/tensorboard/*
 *.log
 
 # Jupyter Notebooks
@@ -56,5 +59,6 @@ Thumbs.db
 
 # Results
 results/*.png
+results/*.txt
 results/*.csv
 results/*.json

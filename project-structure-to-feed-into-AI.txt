@@ -5,8 +5,75 @@ TrueSight_a/
 │
 ├── data/                        # Training/test datasets
 │   ├── train/
+│   │   ├── real/
+│   │   │    ├── video_001/
+│   │   │    │   ├── crops/
+│   │   │    │   │   ├── crop_001.jpg
+│   │   │    │   │   ├── crop_002.jpg
+│   │   │    │   │   ├── ...
+│   │   │    │   ├── frame_001.jpg
+│   │   │    │   ├── frame_002.jpg
+│   │   │    │   ├── ....
+│   │   │    ├── video_002/
+│   │   │    ├── ... 
+│   │   ├── fake/
+│   │   │    ├── video_001/
+│   │   │    │   ├── crops/
+│   │   │    │   │   ├── crop_001.jpg
+│   │   │    │   │   ├── crop_002.jpg
+│   │   │    │   │   ├── ...
+│   │   │    │   ├── frame_001.jpg
+│   │   │    │   ├── frame_002.jpg
+│   │   │    │   ├── ....
+│   │   │    ├── video_002/
+│   │   │    ├── ... 
 │   ├── val/
+│   │   ├── real/
+│   │   │    ├── video_001/
+│   │   │    │   ├── crops/
+│   │   │    │   │   ├── crop_001.jpg
+│   │   │    │   │   ├── crop_002.jpg
+│   │   │    │   │   ├── ...
+│   │   │    │   ├── frame_001.jpg
+│   │   │    │   ├── frame_002.jpg
+│   │   │    │   ├── ....
+│   │   │    ├── video_002/
+│   │   │    ├── ... 
+│   │   ├── fake/
+│   │   │    ├── video_001/
+│   │   │    │   ├── crops/
+│   │   │    │   │   ├── crop_001.jpg
+│   │   │    │   │   ├── crop_002.jpg
+│   │   │    │   │   ├── ...
+│   │   │    │   ├── frame_001.jpg
+│   │   │    │   ├── frame_002.jpg
+│   │   │    │   ├── ....
+│   │   │    ├── video_002/
+│   │   │    ├── ... 
 │   └── test/
+│   │   ├── real/
+│   │   │    ├── video_001/
+│   │   │    │   ├── crops/
+│   │   │    │   │   ├── crop_001.jpg
+│   │   │    │   │   ├── crop_002.jpg
+│   │   │    │   │   ├── ...
+│   │   │    │   ├── frame_001.jpg
+│   │   │    │   ├── frame_002.jpg
+│   │   │    │   ├── ....
+│   │   │    ├── video_002/
+│   │   │    ├── ... 
+│   │   ├── fake/
+│   │   │    ├── video_001/
+│   │   │    │   ├── crops/
+│   │   │    │   │   ├── crop_001.jpg
+│   │   │    │   │   ├── crop_002.jpg
+│   │   │    │   │   ├── ...
+│   │   │    │   ├── frame_001.jpg
+│   │   │    │   ├── frame_002.jpg
+│   │   │    │   ├── ....
+│   │   │    ├── video_002/
+│   │   │    ├── ... 
+│
 │
 ├── models/
 │   ├── checkpoints/

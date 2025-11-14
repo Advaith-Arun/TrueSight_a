@@ -57,8 +57,8 @@ class TrueSightEnsemble(nn.Module):
             nn.Linear(ensemble_config['classifier_hidden'], 1)  # Binary classification
         )
         
-        if hasattr(self.spatial_cnn.backbone, 'gradient_checkpointing_enable'):
-            self.spatial_cnn.backbone.gradient_checkpointing_enable()
+        # if hasattr(self.spatial_cnn.backbone, 'gradient_checkpointing_enable'):
+        #     self.spatial_cnn.backbone.gradient_checkpointing_enable()
         
     def forward(self, video_frames):
 
@@ -92,40 +92,3 @@ class TrueSightEnsemble(nn.Module):
         
         return predictions, probabilities
     
-    
-
-
-if __name__ == '__main__':
-    print("="*70)
-    print("TESTING TRUESIGHT ENSEMBLE MODEL")
-    print("="*70)
-    
-    print("\n1️⃣  Initializing model...")
-    model = TrueSightEnsemble()
-    
-    print("\n2️⃣  Creating test input...")
-    dummy_input = torch.randn(2, 16, 3, 224, 224)
-    print(f"   Input shape: {dummy_input.shape}")
-    
-    print("\n3️⃣  Running forward pass...")
-    output = model(dummy_input)
-    print(f"   Output shape: {output.shape}")
-    print(f"   Output (logits): {output.squeeze()}")
-    
-    print("\n4️⃣  Getting predictions...")
-    predictions, probabilities = model.predict(dummy_input)
-    print(f"   Predictions: {predictions}")
-    print(f"   Probabilities: {probabilities}")
-    print(f"   Labels: {['Real' if p == 0 else 'Fake' for p in predictions]}")
-    
-    print("\n5️⃣  Model statistics:")
-    total_params = sum(p.numel() for p in model.parameters())
-    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"   Total parameters: {total_params:,}")
-    print(f"   Trainable parameters: {trainable_params:,}")
-    print(f"   Model size: ~{total_params * 4 / 1024 / 1024:.2f} MB (float32)")
-    
-    print("\n" + "="*70)
-    print("✅ TRUESIGHT ENSEMBLE MODEL WORKS!")
-    print("="*70)
-    print("\nYou're ready to start training! 🚀")
