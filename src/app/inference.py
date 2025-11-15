@@ -1,184 +1,172 @@
 """
-Inference Engine Module
+TrueSight Inference Engine
 
-Loads Person 1's trained TrueSightEnsemble model and runs deepfake detection inference.
-Uses the correct threshold (0.3) as specified by Person 1.
+Handles loading the trained model and running inference on preprocessed video data.
 """
 
 import torch
-import yaml
 import logging
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 
-# Import Person 1's model
-from src.models.ensemble import TrueSightEnsemble
-
-# Setup logging
-logging.basicConfig(level=logging.INFO)
+# Configure logging
 logger = logging.getLogger(__name__)
-
 
 class InferenceEngine:
     """
-    Deepfake detection inference engine.
+    Inference engine for TrueSight deepfake detection model.
     
-    Loads the trained TrueSightEnsemble model and runs predictions
-    with the correct threshold (0.3 as per Person 1's specification).
+    Loads the trained TrueSightEnsemble model and provides inference capabilities
+    for preprocessed video tensors.
     """
     
     def __init__(
         self,
-        config_path: str = "configs/config.yaml",
-        checkpoint_path: str = "models/checkpoints/best_model.pth",
-        threshold: float = 0.3  # CRITICAL: Use 0.3, not 0.5
+        model_path: str = 'models/checkpoints/best_model.pth',
+        device: str = 'auto',
+        threshold: float = 0.5  # ✅ CHANGED: Model 4 uses 0.5 threshold (was 0.3)
     ):
         """
         Initialize the inference engine.
         
         Args:
-            config_path: Path to config.yaml
-            checkpoint_path: Path to trained model checkpoint
-            threshold: Classification threshold (0.3 as per Person 1)
+            model_path: Path to the trained model checkpoint
+            device: Device to run inference on ('cpu', 'cuda', or 'auto')
+            threshold: Classification threshold (0.5 for Model 4)
         """
-        self.config_path = Path(config_path)
-        self.checkpoint_path = Path(checkpoint_path)
+        self.model_path = Path(model_path)
         self.threshold = threshold
         
-        logger.info("Initializing InferenceEngine...")
-        logger.info(f"Config: {self.config_path}")
-        logger.info(f"Checkpoint: {self.checkpoint_path}")
-        logger.info(f"Threshold: {self.threshold}")
+        # Set device
+        if device == 'auto':
+            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        else:
+            self.device = torch.device(device)
         
-        # Load config
-        self.config = self._load_config()
-        
-        # Determine device (GPU if available)
-        self.device = self._get_device()
         logger.info(f"Using device: {self.device}")
         
         # Load model
         self.model = self._load_model()
+        self.model.to(self.device)
+        self.model.eval()
+        
         logger.info("✅ InferenceEngine initialized successfully")
     
-    def _load_config(self) -> Dict[str, Any]:
-        """Load configuration from YAML file."""
-        if not self.config_path.exists():
-            raise FileNotFoundError(f"Config file not found: {self.config_path}")
-        
-        with open(self.config_path, 'r') as f:
-            config = yaml.safe_load(f)
-        
-        logger.info("Config loaded successfully")
-        return config
-    
-    def _get_device(self) -> torch.device:
-        """
-        Determine the device to use (GPU if available, else CPU).
-        
-        Returns:
-            torch.device object
-        """
-        # Check config preference
-        use_cuda = self.config.get('hardware', {}).get('use_cuda', True)
-        
-        if use_cuda and torch.cuda.is_available():
-            device = torch.device('cuda')
-            logger.info(f"GPU available: {torch.cuda.get_device_name(0)}")
-        else:
-            device = torch.device('cpu')
-            if use_cuda and not torch.cuda.is_available():
-                logger.warning("CUDA requested but not available. Using CPU.")
-        
-        return device
-    
-    def _load_model(self) -> TrueSightEnsemble:
-        """
-        Load the TrueSightEnsemble model with trained weights.
-        
-        Returns:
-            Loaded model in evaluation mode
-        """
+    def _load_model(self):
+        """Load the TrueSightEnsemble model from checkpoint."""
         logger.info("Loading TrueSightEnsemble model...")
         
-        # Initialize model with config
-        model = TrueSightEnsemble(self.config)
+        from src.models.ensemble import TrueSightEnsemble
+        
+        # Initialize model
+        model = TrueSightEnsemble()
+        
+        # Log model structure
+        total_params = sum(p.numel() for p in model.parameters())
+        trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        logger.info(f"Model initialized: {total_params:,} total parameters ({trainable_params:,} trainable)")
         
         # Load checkpoint
-        if not self.checkpoint_path.exists():
-            raise FileNotFoundError(f"Checkpoint not found: {self.checkpoint_path}")
+        if not self.model_path.exists():
+            raise FileNotFoundError(f"Model checkpoint not found: {self.model_path}")
         
-        logger.info(f"Loading checkpoint from {self.checkpoint_path}...")
-        checkpoint = torch.load(
-            self.checkpoint_path,
-            map_location=self.device,
-            weights_only=False  # Person 1's checkpoint includes optimizer state
-        )
+        logger.info(f"Loading checkpoint from {self.model_path}...")
+        checkpoint = torch.load(self.model_path, map_location=self.device, weights_only=False)
         
-        # Load model weights
+        # Log checkpoint info
+        logger.info(f"Checkpoint keys: {list(checkpoint.keys())}")
+        
+        # Load model state
         if 'model_state_dict' in checkpoint:
-            model.load_state_dict(checkpoint['model_state_dict'])
-            logger.info("Loaded model_state_dict from checkpoint")
+            state_dict = checkpoint['model_state_dict']
+            logger.info(f"State dict has {len(state_dict)} keys")
             
-            # Log training info if available
+            # Log first few layer names
+            layer_names = list(state_dict.keys())[:5]
+            logger.info(f"First 5 layers: {layer_names}")
+            
+            # Check weight values
+            first_key = layer_names[0]
+            first_weight = state_dict[first_key]
+            logger.info(f"First layer '{first_key}' shape: {first_weight.shape}")
+            logger.info(f"First layer weight stats: min={first_weight.min().item():.6f}, max={first_weight.max().item():.6f}, mean={first_weight.mean().item():.6f}")
+            
+            # Load weights
+            model.load_state_dict(state_dict)
+            logger.info("✅ Loaded model_state_dict from checkpoint")
+            
+            # Verify weights were loaded by checking again
+            model_first_weight = dict(model.named_parameters())[first_key]
+            logger.info(f"After loading - First layer weight stats: min={model_first_weight.min().item():.6f}, max={model_first_weight.max().item():.6f}, mean={model_first_weight.mean().item():.6f}")
+            
+            # Log training metadata
             if 'epoch' in checkpoint:
                 logger.info(f"Checkpoint from epoch: {checkpoint['epoch']}")
             if 'best_acc' in checkpoint:
                 logger.info(f"Best accuracy: {checkpoint['best_acc']:.2f}%")
         else:
-            # Fallback if checkpoint is just state dict
             model.load_state_dict(checkpoint)
-            logger.info("Loaded state_dict directly")
-        
-        # Move to device and set to evaluation mode
-        model = model.to(self.device)
-        model.eval()
+            logger.info("Loaded model state directly from checkpoint")
         
         logger.info("Model loaded and ready for inference")
         return model
+
     
     def predict(self, video_tensor: torch.Tensor) -> Dict[str, Any]:
         """
-        Run inference on a preprocessed video tensor.
-        
-        Args:
-            video_tensor: Tensor of shape [1, 8, 3, 224, 224]
-        
-        Returns:
-            Dictionary containing:
-                - verdict: "Real" or "Fake"
-                - confidence: Confidence percentage (0-100)
-                - probability: Raw probability (0-1)
-                - threshold: Threshold used for classification
+        Run inference on a preprocessed video tensor with detailed logging.
         """
-        # Verify input shape
-        expected_shape = (1, 8, 3, 224, 224)
-        if video_tensor.shape != expected_shape:
-            raise ValueError(
-                f"Invalid input shape: {video_tensor.shape}. "
-                f"Expected: {expected_shape}"
-            )
+        logger.info("=" * 60)
+        logger.info("INFERENCE DEBUG START")
+        logger.info("=" * 60)
         
-        logger.info("Running inference...")
+        # Log input
+        logger.info(f"Input tensor shape: {video_tensor.shape}")
+        logger.info(f"Input tensor device: {video_tensor.device}")
+        logger.info(f"Input tensor dtype: {video_tensor.dtype}")
+        logger.info(f"Input tensor min/max: {video_tensor.min().item():.4f} / {video_tensor.max().item():.4f}")
+        logger.info(f"Input tensor mean/std: {video_tensor.mean().item():.4f} / {video_tensor.std().item():.4f}")
+        
+        # Ensure model is in eval mode
+        self.model.eval()
         
         # Move tensor to device
         video_tensor = video_tensor.to(self.device)
+        logger.info(f"Tensor moved to device: {self.device}")
         
-        # Run inference (no gradient computation needed)
+        # Run inference
         with torch.no_grad():
-            # Forward pass
-            logits = self.model(video_tensor)
+            logger.info("Calling model forward pass...")
             
-            # Apply sigmoid to get probability
-            probability = torch.sigmoid(logits).item()
+            try:
+                output = self.model(video_tensor)
+                logger.info(f"✅ Forward pass successful")
+            except Exception as e:
+                logger.error(f"❌ Forward pass FAILED: {e}")
+                raise
+            
+            # Log raw output
+            logger.info(f"Raw model output (logit): {output.item():.8f}")
+            logger.info(f"Output tensor shape: {output.shape}")
+            logger.info(f"Output tensor dtype: {output.dtype}")
+            
+            # Apply sigmoid
+            probability = torch.sigmoid(output).item()
+            logger.info(f"After sigmoid (probability): {probability:.8f}")
+            logger.info(f"Probability as percentage: {probability * 100:.4f}%")
         
-        # Apply threshold to get verdict
-        # CRITICAL: Use 0.3 threshold as per Person 1's specification
+        # Classify
         is_fake = probability >= self.threshold
         verdict = "Fake" if is_fake else "Real"
-        
-        # Convert to confidence percentage
         confidence = probability * 100
+        
+        logger.info(f"Classification threshold: {self.threshold}")
+        logger.info(f"Is fake? {probability:.4f} >= {self.threshold} = {is_fake}")
+        logger.info(f"Final verdict: {verdict}")
+        logger.info(f"Final confidence: {confidence:.2f}%")
+        logger.info("=" * 60)
+        logger.info("INFERENCE DEBUG END")
+        logger.info("=" * 60)
         
         result = {
             "verdict": verdict,
@@ -187,60 +175,62 @@ class InferenceEngine:
             "threshold": self.threshold
         }
         
-        logger.info(f"Inference complete: {verdict} (confidence: {confidence:.2f}%)")
-        
         return result
+
     
-    def predict_batch(self, video_tensors: torch.Tensor) -> list[Dict[str, Any]]:
+    def get_model_info(self) -> Dict[str, Any]:
         """
-        Run inference on multiple videos at once.
-        
-        Args:
-            video_tensors: Tensor of shape [batch_size, 8, 3, 224, 224]
+        Get information about the loaded model.
         
         Returns:
-            List of prediction dictionaries
+            Dictionary with model metadata
         """
-        batch_size = video_tensors.shape[0]
-        logger.info(f"Running batch inference on {batch_size} videos...")
+        info = {
+            "model_path": str(self.model_path),
+            "device": str(self.device),
+            "threshold": self.threshold,
+            "model_type": "TrueSightEnsemble (Three-Stream: Spatial + Frequency + Temporal)"
+        }
         
-        # Move to device
-        video_tensors = video_tensors.to(self.device)
+        # Count parameters
+        total_params = sum(p.numel() for p in self.model.parameters())
+        trainable_params = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         
-        # Run inference
-        with torch.no_grad():
-            logits = self.model(video_tensors)
-            probabilities = torch.sigmoid(logits)
+        info["total_parameters"] = total_params
+        info["trainable_parameters"] = trainable_params
         
-        # Process each result
-        results = []
-        for i, prob in enumerate(probabilities):
-            probability = prob.item()
-            is_fake = probability >= self.threshold
-            verdict = "Fake" if is_fake else "Real"
-            confidence = probability * 100
-            
-            results.append({
-                "verdict": verdict,
-                "confidence": round(confidence, 2),
-                "probability": round(probability, 4),
-                "threshold": self.threshold
-            })
-        
-        logger.info(f"Batch inference complete: {batch_size} videos processed")
-        return results
+        return info
 
 
-# Convenience function for single prediction
-def predict_video(video_tensor: torch.Tensor) -> Dict[str, Any]:
-    """
-    Convenience function to run inference on a single video.
+def test_inference():
+    """Test the inference engine with a dummy video tensor."""
+    logger.info("Testing InferenceEngine...")
     
-    Args:
-        video_tensor: Tensor of shape [1, 8, 3, 224, 224]
-    
-    Returns:
-        Prediction dictionary
-    """
+    # Create inference engine
     engine = InferenceEngine()
-    return engine.predict(video_tensor)
+    
+    # Print model info
+    info = engine.get_model_info()
+    logger.info(f"Model Info: {info}")
+    
+    # Create dummy video tensor [1, 8, 3, 224, 224]
+    dummy_video = torch.randn(1, 8, 3, 224, 224)
+    
+    # Run inference
+    result = engine.predict(dummy_video)
+    
+    logger.info(f"Test inference result: {result}")
+    logger.info("✅ InferenceEngine test complete!")
+    
+    return result
+
+
+if __name__ == "__main__":
+    # Configure logging for standalone execution
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    
+    # Run test
+    test_inference()

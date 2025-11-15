@@ -1,0 +1,2 @@
+dataset,split,video_path,frames_dir,label,num_frames
+generic,train,/home/abhinavs/Documents/TrueSight_a/data/test/real/id1_0001_real.mp4,train/real/id1_0001_real,real,10

@@ -10,7 +10,7 @@ import shutil
 from pathlib import Path
 from PIL import Image
 from torchvision import transforms
-from typing import Tuple, List
+from typing import Tuple, List, Union
 import logging
 
 # Import Person 2's preprocessing
@@ -19,7 +19,6 @@ from src.preprocessing.preprocess_final import PreprocessFinal
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
 
 class VideoProcessor:
     """
@@ -40,8 +39,9 @@ class VideoProcessor:
         Args:
             temp_dir: Directory for temporary preprocessing output
         """
-        self.temp_dir = Path(temp_dir)
-        self.temp_dir.mkdir(parents=True, exist_ok=True)
+        self.temp_base_dir = Path(temp_dir)
+        self.temp_base_dir.mkdir(parents=True, exist_ok=True)
+        self.current_output_dir = None  # Track for cleanup
         
         # ImageNet normalization (same as training)
         self.normalize = transforms.Compose([
@@ -52,31 +52,35 @@ class VideoProcessor:
             )
         ])
         
-        logger.info(f"VideoProcessor initialized. Temp dir: {self.temp_dir}")
+        logger.info(f"VideoProcessor initialized. Temp base dir: {self.temp_base_dir}")
     
-    def process_video(self, video_path: Path, num_frames: int = 8) -> Tuple[torch.Tensor, Path]:
+    def process_video(self, video_path: Union[str, Path], num_frames: int = 8) -> torch.Tensor:
         """
         Process a single video file for inference.
         
         Args:
-            video_path: Path to the uploaded video file
+            video_path: Path to the uploaded video file (string or Path)
             num_frames: Number of frames to sample (default: 8)
-        
+            
         Returns:
-            Tuple of (tensor, output_dir):
-                - tensor: Shape [1, 8, 3, 224, 224] ready for model inference
-                - output_dir: Path to preprocessing output (for cleanup)
-        
+            Processed video tensor of shape [1, 8, 3, 224, 224] ready for model inference
+            
         Raises:
             ValueError: If no faces detected or insufficient frames
             RuntimeError: If preprocessing fails
         """
         logger.info(f"Processing video: {video_path}")
         
+        # ✅ FIXED: Convert string to Path object
+        video_path = Path(video_path)
+        
         # Create unique output directory for this video
         video_name = video_path.stem
-        output_dir = self.temp_dir / video_name
+        output_dir = self.temp_base_dir / video_name
         output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Store for cleanup
+        self.current_output_dir = output_dir
         
         try:
             # Step 1: Run Person 2's preprocessing
@@ -91,7 +95,7 @@ class VideoProcessor:
                 face_size=224,  # Resize to 224x224
                 heatmap=False,  # Don't need heatmaps for inference
                 splits=(1.0, 0.0, 0.0),  # All frames go to "train" split
-                per_label_split=False  # FIXED: Use per_label_split instead of split_mode
+                per_label_split=False  # Use per_label_split instead of split_mode
             )
             
             # Process the video
@@ -99,7 +103,7 @@ class VideoProcessor:
             logger.info("Preprocessing completed")
             
             # Step 2: Locate the face crops
-            # Person 2's output structure: output_dir/train/label/video_name/crops/
+            # Person 2's output structure: output_dir/train/*/video_name/crops/
             crops_dir = self._find_crops_directory(output_dir, video_name)
             
             if crops_dir is None:
@@ -141,7 +145,8 @@ class VideoProcessor:
                     f"Expected: {expected_shape}"
                 )
             
-            return video_tensor, output_dir
+            # ✅ FIXED: Return only the tensor (cleanup handled separately)
+            return video_tensor
             
         except Exception as e:
             logger.error(f"Error processing video: {e}")
@@ -176,7 +181,7 @@ class VideoProcessor:
         Args:
             frame_paths: List of paths to frame images
             num_frames: Number of frames to sample
-        
+            
         Returns:
             List of sampled frame paths (length = num_frames)
         """
@@ -199,31 +204,29 @@ class VideoProcessor:
         
         return sampled
     
-    def cleanup(self, output_dir: Path):
+    def cleanup(self):
         """
-        Clean up temporary preprocessing files.
-        
-        Args:
-            output_dir: Directory to remove
+        Clean up temporary preprocessing files from current processing.
         """
-        try:
-            if output_dir.exists():
-                shutil.rmtree(output_dir)
-                logger.info(f"Cleaned up temporary directory: {output_dir}")
-        except Exception as e:
-            logger.error(f"Error cleaning up {output_dir}: {e}")
+        if self.current_output_dir and self.current_output_dir.exists():
+            try:
+                shutil.rmtree(self.current_output_dir)
+                logger.info(f"Cleaned up temporary directory: {self.current_output_dir}")
+                self.current_output_dir = None
+            except Exception as e:
+                logger.error(f"Error cleaning up {self.current_output_dir}: {e}")
 
 
 # Convenience function for single-video processing
-def process_video_for_inference(video_path: Path) -> Tuple[torch.Tensor, Path]:
+def process_video_for_inference(video_path: Union[str, Path]) -> torch.Tensor:
     """
     Convenience function to process a single video.
     
     Args:
-        video_path: Path to video file
-    
+        video_path: Path to video file (string or Path)
+        
     Returns:
-        Tuple of (tensor [1, 8, 3, 224, 224], temp_output_dir)
+        Tensor of shape [1, 8, 3, 224, 224]
     """
     processor = VideoProcessor()
     return processor.process_video(video_path)
