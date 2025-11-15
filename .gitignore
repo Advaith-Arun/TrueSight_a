@@ -17,6 +17,8 @@ build/
 # Data Files
 /data/
 /data_processed/
+/src/app/temp_processing/id1_001_real/*
+/src/app/temp_processing/*
 *.mp4
 *.avi
 *.mov

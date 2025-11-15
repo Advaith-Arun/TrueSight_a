@@ -2,46 +2,45 @@ import torch
 import torch.nn as nn
 import torch.fft
 
+import torch
+import torch.nn as nn
+import torch.fft
+import torchvision.models as models
+from torchvision.models import EfficientNet_B0_Weights
+
 class FrequencyCNN(nn.Module): # Frequency Analyzer using 2D Fast Fourier Transform
 
-    def __init__(self, input_channels=3, feature_dim=256):
+    def __init__(self, input_channels=3, feature_dim=256, pretrained=True):
         super(FrequencyCNN, self).__init__()
         
-        # CNN for processing frequency magnitude spectrum
-        self.freq_cnn = nn.Sequential(
-            # First conv block
-            nn.Conv2d(input_channels, 32, kernel_size=3, padding=1),
-            nn.BatchNorm2d(32),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
+        # Load pre-trained EfficientNet-B0
+        if pretrained:
+            weights = EfficientNet_B0_Weights.IMAGENET1K_V1
+        else:
+            weights = None
             
-            # Second conv block
-            nn.Conv2d(32, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-            
-            # Third conv block
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-            
-            # Fourth conv block
-            nn.Conv2d(128, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(),
-            nn.AdaptiveAvgPool2d((1, 1)),
-            
-            # Flatten and project
+        efficientnet = models.efficientnet_b0(weights=weights)
+        
+        # Use the feature extractor part of EfficientNet
+        self.backbone = efficientnet.features
+        
+        # Use the pooling layer from EfficientNet
+        self.pool = efficientnet.avgpool
+        
+        # Get the number of features EfficientNet outputs (it's 1280 for B0)
+        in_features = efficientnet.classifier[1].in_features
+        
+        # New feature projection layer to match the required feature_dim
+        self.feature_proj = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(256, feature_dim),
+            nn.Linear(in_features, feature_dim),
             nn.ReLU(),
             nn.Dropout(0.3)
         )
         
     def forward(self, x): # Returns frequency features
 
+        # Calculate FFT
         fft_result = torch.fft.fft2(x)
         
         magnitude = torch.abs(fft_result)
@@ -50,23 +49,9 @@ class FrequencyCNN(nn.Module): # Frequency Analyzer using 2D Fast Fourier Transf
         # Shift zero-frequency component to center
         magnitude_log = torch.fft.fftshift(magnitude_log, dim=(-2, -1))
         
-        # Extract frequency features using CNN
-        freq_features = self.freq_cnn(magnitude_log)
+        # Extract frequency features using the EfficientNet backbone
+        features = self.backbone(magnitude_log)
+        features = self.pool(features)
+        freq_features = self.feature_proj(features)
         
         return freq_features
-
-# Test the model
-if __name__ == '__main__':
-    model = FrequencyCNN(input_channels=3, feature_dim=256)
-    
-    dummy_input = torch.randn(4, 3, 224, 224)
-    output = model(dummy_input)
-    
-    print(f"Input shape: {dummy_input.shape}")
-    print(f"Output shape: {output.shape}")
-    print(f"✅ Frequency CNN works!")
-    
-    total_params = sum(p.numel() for p in model.parameters())
-    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"Total parameters: {total_params:,}")
-    print(f"Trainable parameters: {trainable_params:,}")
