@@ -3,11 +3,16 @@ TrueSight Inference Engine
 
 Handles loading the trained model and running inference on preprocessed video data.
 """
-
+import sys
 import torch
 import logging
 from pathlib import Path
 from typing import Dict, Any, Tuple
+
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+from src.app.gradcam import TrueSightGradCAM
+from src.app.config_loader import get_config
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -24,7 +29,8 @@ class InferenceEngine:
         self,
         model_path: str = 'models/checkpoints/best_model.pth',
         device: str = 'auto',
-        threshold: float = 0.5  # ✅ CHANGED: Model 4 uses 0.5 threshold (was 0.3)
+        threshold: float = 0.5,
+        enable_gradcam: bool = None
     ):
         """
         Initialize the inference engine.
@@ -33,6 +39,7 @@ class InferenceEngine:
             model_path: Path to the trained model checkpoint
             device: Device to run inference on ('cpu', 'cuda', or 'auto')
             threshold: Classification threshold (0.5 for Model 4)
+            enable_gradcam: Enable Grad-CAM generation (None = use config)
         """
         self.model_path = Path(model_path)
         self.threshold = threshold
@@ -51,6 +58,22 @@ class InferenceEngine:
         self.model.eval()
         
         logger.info("✅ InferenceEngine initialized successfully")
+        
+        # ✨ NEW: Initialize Grad-CAM if enabled
+        config = get_config()
+        self.gradcam_enabled = enable_gradcam if enable_gradcam is not None else config.is_gradcam_enabled()
+        self.gradcam = None
+        
+        if self.gradcam_enabled:
+            try:
+                self.gradcam = TrueSightGradCAM(self.model, device=str(self.device))
+                logger.info("✅ Grad-CAM initialized successfully")
+            except Exception as e:
+                logger.warning(f"⚠️  Failed to initialize Grad-CAM: {e}. Continuing without explainability.")
+                self.gradcam_enabled = False
+        else:
+            logger.info("ℹ️  Grad-CAM disabled (not enabled in config)")
+
     
     def _load_model(self):
         """Load the TrueSightEnsemble model from checkpoint."""
@@ -176,6 +199,54 @@ class InferenceEngine:
         }
         
         return result
+    
+    def predict_with_gradcam(
+        self,
+        video_tensor: torch.Tensor,
+        raw_frames: list = None
+    ) -> Dict[str, Any]:
+        """
+        Run inference with Grad-CAM visualization.
+        
+        Args:
+            video_tensor: Preprocessed frames [1, num_frames, 3, 224, 224]
+            raw_frames: Optional list of raw frame arrays for better overlay
+        
+        Returns:
+            Dictionary containing prediction and Grad-CAM results
+        """
+        # Get standard prediction
+        result = self.predict(video_tensor)
+        
+        # Add Grad-CAM if enabled
+        if self.gradcam_enabled and self.gradcam is not None:
+            try:
+                config = get_config()
+                gradcam_config = config.get_gradcam_config()
+                target_class = gradcam_config.get('target_class', 'fake')
+                
+                logger.info(f"🔍 Generating Grad-CAM for '{target_class}' class...")
+                gradcam_result = self.gradcam.generate_heatmaps(
+                    frames_tensor=video_tensor,
+                    raw_frames=raw_frames,
+                    target_class=target_class
+                )
+                
+                result['gradcam'] = gradcam_result
+                result['gradcam_enabled'] = True
+                logger.info(f"✅ Generated {gradcam_result['num_frames']} Grad-CAM heatmaps")
+                
+            except Exception as e:
+                logger.error(f"❌ Grad-CAM generation failed: {e}")
+                result['gradcam'] = None
+                result['gradcam_enabled'] = False
+                result['gradcam_error'] = str(e)
+        else:
+            result['gradcam'] = None
+            result['gradcam_enabled'] = False
+        
+        return result
+
 
     
     def get_model_info(self) -> Dict[str, Any]:

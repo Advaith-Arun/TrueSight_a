@@ -1,80 +1,180 @@
 import streamlit as st
-import numpy as np
-import cv2
+from pathlib import Path
+from PIL import Image
+import requests
+import os
 
 # Define colors locally
 COLOR_RED = "#E60000"
 COLOR_GREEN = "#00C853"
+COLOR_TEXT_BODY = "#E0E0E0"
+
+BACKEND_URL = os.environ.get("TRUESIGHT_BACKEND_URL", "http://localhost:5000")
+
 
 def render_explainability(backend_url):
     """
     Renders the explainability page with Grad-CAM visualization.
-    Only shown when verdict is 'Fake' (placeholder for now).
+    Loads real Grad-CAM data from the most recent completed job.
     """
-    st.markdown(f"<h2 style='font-family: Orbitron; color: {COLOR_RED};'>Forensic Visualization</h2>", unsafe_allow_html=True)
     
-    if st.session_state.get('verdict') == 'Real':
-        st.success("✅ **Authenticity Verified**")
-        st.info("This video passed all forensic checks. No manipulation artifacts detected.")
-        st.markdown("---")
-        st.markdown("""
-        ### Why No Visualization?
-        Real (authentic) videos do not exhibit the telltale patterns that deepfake models look for.
-        Grad-CAM heatmaps are only generated for videos classified as **Fake**, where we can
-        highlight suspicious regions (e.g., around the mouth, eyes, or facial boundaries).
-        """)
-        return
-    
-    elif st.session_state.get('verdict') != 'Fake':
-        st.warning("⚠️ No analysis results available yet. Please upload and analyze a video first.")
-        return
-    
-    # FAKE verdict - Show explainability
     st.markdown(f"""
-    <p style='color: {COLOR_RED}; font-family: Orbitron;'>
-    ⚠️ MANIPULATION DETECTED | Displaying forensic heatmap overlay
-    </p>
+        <div style="text-align: center; padding: 20px 0 40px 0; 
+             background: linear-gradient(135deg, {COLOR_RED} 0%, #8B0000 100%);
+             border-radius: 10px; margin-bottom: 30px;">
+            <h1 style="color: white; font-size: 2.5rem; margin: 0;">
+                ⚠️ MANIPULATION DETECTED
+            </h1>
+            <p style="color: rgba(255,255,255,0.9); font-size: 1.2rem; margin-top: 10px;">
+                Displaying forensic heatmap overlay
+            </p>
+        </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("### Frame-by-Frame Analysis")
-    st.info("🔬 **Note**: Grad-CAM visualization is currently using placeholder data. Full implementation pending model finalization.")
+    # Get latest completed job with Grad-CAM
+    try:
+        response = requests.get(f"{backend_url}/jobs")
+        response.raise_for_status()
+        jobs_data = response.json()
+        
+        # Find most recent completed job with Grad-CAM
+        completed_jobs = [
+            job for job in jobs_data.get('jobs', [])
+            if job.get('status') == 'completed' and job.get('gradcam_enabled')
+        ]
+        
+        if not completed_jobs:
+            st.warning("⚠️ No completed jobs with Grad-CAM available.")
+            st.info("💡 Upload a video and wait for analysis to complete.")
+            return
+        
+        # Get the most recent job
+        latest_job = completed_jobs[0]
+        job_id = latest_job['job_id']
+        
+        # Fetch full results
+        response = requests.get(f"{backend_url}/results/{job_id}")
+        response.raise_for_status()
+        result = response.json()
+        
+    except requests.RequestException as e:
+        st.error(f"❌ Failed to fetch data: {e}")
+        return
     
-    # Generate placeholder Grad-CAM data (8 frames)
-    grad_cam_frames = []
-    for i in range(8):
-        heatmap = np.random.rand(224, 224)
-        grad_cam_frames.append(heatmap)
+    # Display job info
+    st.markdown(f"**Analyzing Job:** `{job_id}`")
+    st.markdown(f"**File:** {result.get('filename', 'Unknown')}")
+    st.markdown(f"**Verdict:** {result.get('verdict', 'Unknown')} ({result.get('confidence', 0):.2f}% confidence)")
     
-    # Simple frame scrubber
-    frame_idx = st.slider("Select Frame", min_value=0, max_value=7, value=0, key="frame_scrubber")
-    
-    # Display heatmap
-    heatmap_data = grad_cam_frames[frame_idx]
-    heatmap_rgb = cv2.applyColorMap((heatmap_data * 255).astype(np.uint8), cv2.COLORMAP_JET)
-    
-    st.image(heatmap_rgb, caption=f"Frame {frame_idx + 1}/8 - Grad-CAM Heatmap", use_column_width=True)
-    
-    # Explainability controls
     st.markdown("---")
-    st.markdown("### Analysis Controls")
     
-    col1, col2 = st.columns(2)
+    # Get Grad-CAM directory
+    gradcam_dir = Path(result.get('gradcam_dir', ''))
     
-    with col1:
-        opacity = st.slider("Heatmap Opacity", min_value=0.0, max_value=1.0, value=0.5, step=0.1)
-        st.info(f"Current opacity: {opacity}")
+    if not gradcam_dir.exists():
+        st.error("❌ Grad-CAM visualizations not found.")
+        return
     
-    with col2:
-        show_grid = st.checkbox("Show Grid Overlay", value=False)
-        if show_grid:
-            st.success("Grid overlay enabled")
+    # What is Grad-CAM section
+    with st.expander("🔬 **What is Grad-CAM?**", expanded=True):
+        st.markdown("""
+        **Grad-CAM (Gradient-weighted Class Activation Mapping)** is a visualization 
+        technique that shows which parts of the video the AI model focused on when 
+        making its prediction.
+        
+        ### How to Read the Heatmaps:
+        
+        - 🔴 **Red/Orange regions**: Areas the model considered most important
+        - 🟡 **Yellow regions**: Moderately important areas
+        - 🔵 **Blue/Purple regions**: Less important areas
+        - ⚫ **Dark regions**: Background or ignored areas
+        
+        ### What This Tells Us:
+        
+        **For Fake Videos:**
+        - Model typically focuses on mouth, eyes, and facial edges
+        - Strong activations indicate detected manipulation artifacts
+        - Concentrated hotspots show specific problem areas
+        
+        **For Real Videos:**
+        - Activations are weaker and more distributed
+        - No concentrated hotspots on specific features
+        - Model found no suspicious patterns
+        
+        This transparency helps you understand and trust the AI's decision-making process!
+        """)
     
-    # Export options
+    # Average Heatmap
+    avg_heatmap_path = Path(result.get('gradcam_avg_heatmap', ''))
+    if avg_heatmap_path.exists():
+        st.markdown("### 📊 **Overall Attention Map**")
+        st.markdown("*Shows the combined attention across all analyzed frames*")
+        
+        col1, col2, col3 = st.columns([1, 3, 1])
+        with col2:
+            try:
+                avg_img = Image.open(avg_heatmap_path)
+                st.image(avg_img, caption="Average Grad-CAM Heatmap")
+            except Exception as e:
+                st.error(f"Error loading average heatmap: {e}")
+    
+    # Frame-by-frame analysis
     st.markdown("---")
-    st.markdown("### Export Options")
+    st.markdown("### 🎞️ **Frame-by-Frame Analysis**")
     
-    if st.button("📸 Export Current Frame (PNG)", key="export_png"):
-        st.info("Screenshot export functionality coming soon!")
-    
-    if st.button("📊 Generate Analysis Report (PDF)", key="export_pdf"):
-        st.info("PDF report generation coming soon!")
+    overlays_dir = gradcam_dir / 'overlays'
+    if overlays_dir.exists():
+        overlay_files = sorted(list(overlays_dir.glob('frame_*_overlay.jpg')))
+        
+        if overlay_files:
+            st.markdown(f"*Analyzing {len(overlay_files)} frames*")
+            
+            # Frame scrubber (slider)
+            frame_idx = st.slider(
+                "Select Frame",
+                min_value=0,
+                max_value=len(overlay_files) - 1,
+                value=0,
+                key="frame_scrubber"
+            )
+            
+            # Display selected frame
+            col1, col2, col3 = st.columns([1, 4, 1])
+            with col2:
+                try:
+                    frame_img = Image.open(overlay_files[frame_idx])
+                    st.image(
+                        frame_img,
+                        caption=f"Frame {frame_idx} - Grad-CAM Heatmap Overlay"
+                    )
+                except Exception as e:
+                    st.error(f"Error loading frame: {e}")
+            
+            # Frame info
+            st.markdown(f"""
+            **Frame {frame_idx} Analysis:**
+            - Heatmap overlay shows regions examined by the model
+            - Red areas indicate high attention/importance
+            - Blue/dark areas indicate low attention
+            """)
+            
+            # Grid view option
+            st.markdown("---")
+            if st.checkbox("Show all frames in grid", value=False):
+                st.markdown("#### All Frames Grid View")
+                cols_per_row = 4
+                for i in range(0, len(overlay_files), cols_per_row):
+                    cols = st.columns(cols_per_row)
+                    for j, col in enumerate(cols):
+                        idx = i + j
+                        if idx < len(overlay_files):
+                            with col:
+                                try:
+                                    frame_img = Image.open(overlay_files[idx])
+                                    st.image(frame_img, caption=f"Frame {idx}")
+                                except Exception as e:
+                                    st.error(f"Error: Frame {idx}")
+        else:
+            st.warning("No overlay images found.")
+    else:
+        st.error("Overlays directory not found.")

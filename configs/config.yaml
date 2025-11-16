@@ -77,7 +77,7 @@ evaluation:
 app:
   max_upload_size_mb: 500
   allowed_extensions: ["mp4", "avi", "mov"]
-  inference_threshold: 0.5 # ✅ CHANGED: Match Model 4 training threshold (was 0.3)
+  inference_threshold: 0.5
   batch_size: 1
   num_workers: 2
   enable_gradcam: false
@@ -112,3 +112,19 @@ hardware:
   gpu_memory: "8GB"
   use_cuda: true
   cuda_benchmark: true
+
+# Grad-CAM Explainability Configuration
+explainability:
+  enabled: true # Enable/disable Grad-CAM generation
+
+  # Output settings
+  output_dir: "results/gradcam" # Where to save Grad-CAM visualizations
+  save_individual_frames: true # Save per-frame heatmaps
+  save_average_heatmap: true # Save average heatmap across all frames
+  save_overlays: true # Save RGB overlays (heatmap on original frames)
+
+  # Generation settings
+  target_class: "fake" # Which class to generate Grad-CAM for ('fake' or 'real')
+
+  # Performance settings
+  max_processing_time_seconds: 5 # Maximum time to spend on Grad-CAM

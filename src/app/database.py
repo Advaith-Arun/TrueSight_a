@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 
-from sqlalchemy import create_engine, Column, String, Float, DateTime, Integer
+from sqlalchemy import create_engine, Column, String, Float, DateTime, Integer, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 
@@ -55,6 +55,13 @@ class AnalysisJob(Base):
     
     # Error handling
     error_message = Column(String(500), nullable=True)
+
+    #Grad-CAM Explainability Fields 
+    gradcam_enabled = Column(Boolean, default=False, nullable=False)
+    gradcam_dir = Column(String(500), nullable=True)  # Directory containing all Grad-CAM files
+    gradcam_avg_heatmap = Column(String(500), nullable=True)  # Path to average heatmap
+    gradcam_frame_count = Column(Integer, nullable=True)  # Number of frame heatmaps generated
+
     
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -74,7 +81,11 @@ class AnalysisJob(Base):
             'confidence': round(self.confidence, 2) if self.confidence else None,
             'probability': round(self.probability, 4) if self.probability else None,
             'processing_time_seconds': round(self.processing_time_seconds, 2) if self.processing_time_seconds else None,
-            'error_message': self.error_message
+            'error_message': self.error_message,
+            'gradcam_enabled': self.gradcam_enabled,
+            'gradcam_dir': self.gradcam_dir,
+            'gradcam_avg_heatmap': self.gradcam_avg_heatmap,
+            'gradcam_frame_count': self.gradcam_frame_count
         }
 
 
@@ -374,6 +385,78 @@ class DatabaseManager:
         finally:
             session.close()
 
+    def update_gradcam_paths(
+        self,
+        job_id: str,
+        gradcam_dir: str,
+        avg_heatmap_path: str,
+        frame_count: int
+    ) -> bool:
+        """
+        Update Grad-CAM visualization paths for a job.
+        
+        Args:
+            job_id: Job identifier
+            gradcam_dir: Directory containing Grad-CAM visualizations
+            avg_heatmap_path: Path to average heatmap image
+            frame_count: Number of frame heatmaps generated
+        
+        Returns:
+            True if updated successfully, False otherwise
+        """
+        session = self.get_session()
+        try:
+            job = session.query(AnalysisJob).filter_by(job_id=job_id).first()
+            
+            if job:
+                job.gradcam_enabled = True
+                job.gradcam_dir = gradcam_dir
+                job.gradcam_avg_heatmap = avg_heatmap_path
+                job.gradcam_frame_count = frame_count
+                
+                session.commit()
+                logger.info(f"✅ Updated Grad-CAM paths for job {job_id}")
+                return True
+            else:
+                logger.warning(f"Job {job_id} not found")
+                return False
+                
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Error updating Grad-CAM paths: {e}")
+            return False
+        finally:
+            session.close()
+    
+    def get_gradcam_paths(self, job_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get Grad-CAM visualization paths for a job.
+        
+        Args:
+            job_id: Job identifier
+        
+        Returns:
+            Dictionary with Grad-CAM paths or None if not found
+        """
+        session = self.get_session()
+        try:
+            job = session.query(AnalysisJob).filter_by(job_id=job_id).first()
+            
+            if not job:
+                return None
+            
+            return {
+                'enabled': job.gradcam_enabled,
+                'directory': job.gradcam_dir,
+                'avg_heatmap': job.gradcam_avg_heatmap,
+                'frame_count': job.gradcam_frame_count
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting Grad-CAM paths: {e}")
+            return None
+        finally:
+            session.close()
 
 # Global database instance
 _db_instance = None

@@ -188,14 +188,12 @@ if st.session_state.current_job_id:
     st.sidebar.info(f"**Active Job:** {st.session_state.current_job_id[:8]}...")
     st.sidebar.info(f"**Status:** {st.session_state.job_status}")
 
-# --- IMPORT PAGE MODULES (FIXED - NO CIRCULAR IMPORTS) ---
-# Add pages and components directories to Python path
+# --- IMPORT PAGE MODULES ---
 pages_path = Path(__file__).parent / "pages"
 components_path = Path(__file__).parent / "components"
 sys.path.insert(0, str(pages_path))
 sys.path.insert(0, str(components_path))
 
-# Import page render functions
 try:
     from upload import render_upload
     from results import render_results

@@ -1,135 +1,232 @@
+"""
+Upload Page - Video Upload with Auto-Status Polling
+Styled with Orbitron font and custom cyberpunk aesthetic
+"""
+
 import streamlit as st
 import requests
 import time
-import json
-import os
 
-# Define BACKEND_URL locally (no import from streamlit_app)
-BACKEND_URL = os.environ.get("TRUESIGHT_BACKEND_URL", "http://localhost:5000")
+# Color constants (matching main app)
+COLOR_RED = "#E60000"
+COLOR_GREEN = "#00C853"
+COLOR_TEXT_BODY = "#E0E0E0"
+COLOR_CARD_BG = "#080808"
 
 def render_upload(backend_url):
-    """Handles video file upload, initiates asynchronous processing, and manages polling."""
-    st.markdown(f"<h2 style='font-family: Orbitron;'>New Analysis Request</h2>", unsafe_allow_html=True)
+    """
+    Renders the upload page with file uploader and auto-status polling.
+    Integrates with backend POST /upload and GET /status endpoints.
+    """
     
-    # Reset result state when navigating to upload
-    if 'verdict' in st.session_state and st.session_state.verdict is not None:
-        st.session_state.verdict = None
-        st.session_state.job_result = None
-
-    uploaded_file = st.file_uploader(
-        "Upload Video (MP4, AVI, MOV)",
-        type=["mp4", "avi", "mov"],
-        accept_multiple_files=False,
-        help="Max size 500 MB. File will be deleted after analysis."
-    )
+    # --- PAGE HEADER ---
+    st.markdown("""
+        <div style='text-align: center; padding: 30px 0;'>
+            <h2 style='font-family: Orbitron, sans-serif; color: #E60000; 
+                 text-shadow: 0 0 15px #E6000080; font-size: 2.5rem;'>
+                📤 New Analysis Request
+            </h2>
+            <p style='color: #888; font-size: 1.1rem; margin-top: 10px;'>
+                Upload a video file to detect deepfake manipulation using our AI ensemble
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
     
     st.markdown("---")
     
-    if st.session_state.get('current_job_id') and st.session_state.get('job_status') in ['queued', 'processing']:
-        st.info(f"Job **{st.session_state.current_job_id[:8]}** is already running. Monitoring status...")
-        poll_status_ui(backend_url)
-        return  # Block new uploads while polling
+    # --- FILE UPLOADER SECTION ---
+    st.markdown("""
+        <div style='background: #080808; padding: 20px; border-radius: 10px; 
+             border: 1px solid #E6000040; margin-bottom: 20px;'>
+            <h3 style='font-family: Orbitron; color: #E60000; margin-bottom: 10px;'>
+                Upload Video (MP4, AVI, MOV)
+            </h3>
+        </div>
+    """, unsafe_allow_html=True)
     
-    if uploaded_file is not None:
+    uploaded_file = st.file_uploader(
+        "Choose a video file",
+        type=["mp4", "avi", "mov"],
+        help="Maximum file size: 500MB",
+        key="upload_file_input",
+        label_visibility="collapsed"
+    )
+    
+    # --- FILE INFO DISPLAY ---
+    if uploaded_file:
+        # Store file in session state
+        st.session_state.uploaded_file = uploaded_file
+        
         file_size_mb = uploaded_file.size / (1024 * 1024)
-        if file_size_mb > 500:
-            st.error("❌ Error 413: File exceeds 500 MB limit.")
-            return
+        st.session_state.file_size_mb = file_size_mb
+        st.session_state.filename = uploaded_file.name
         
-        st.markdown(f"**File:** {uploaded_file.name} | **Size:** {file_size_mb:.2f} MB")
+        # Display file details in styled card
+        st.markdown(f"""
+            <div style='background: {COLOR_CARD_BG}; padding: 15px; border-radius: 8px; 
+                 border-left: 4px solid {COLOR_GREEN}; margin: 20px 0;'>
+                <p style='margin: 0; color: {COLOR_TEXT_BODY};'>
+                    <strong>File:</strong> {uploaded_file.name}<br>
+                    <strong>Size:</strong> {file_size_mb:.2f} MB
+                </p>
+            </div>
+        """, unsafe_allow_html=True)
         
-        if st.button("Initiate Analysis (POST /upload)", key="analyze_btn"):
-            st.session_state.verdict = None
-            st.session_state.job_result = None
-            
-            with st.spinner("Uploading video..."):
+        # Video preview (optional expandable)
+        with st.expander("🎬 Preview Video", expanded=False):
+            st.video(uploaded_file)
+        
+        st.markdown("---")
+        
+        # --- UPLOAD BUTTON ---
+        if st.button(
+            "🚀 Initiate Analysis (POST /upload)",
+            type="primary",
+            use_container_width=True,
+            key="upload_submit_btn"
+        ):
+            # --- UPLOAD PROCESS ---
+            with st.spinner("📤 Uploading video to backend..."):
                 try:
-                    files = {'video': (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)}
-                    response = requests.post(f"{backend_url}/upload", files=files, timeout=30)
+                    # Prepare file for upload (backend expects 'video' key)
+                    files = {
+                        'video': (
+                            uploaded_file.name,
+                            uploaded_file.getvalue(),
+                            uploaded_file.type
+                        )
+                    }
                     
-                    if response.status_code == 202:
-                        data = response.json()
-                        st.session_state.current_job_id = data.get('job_id')
-                        st.session_state.job_status = data.get('status')
-                        st.session_state.filename = data.get('filename')
-                        st.session_state.file_size_mb = data.get('file_size_mb')
-                        st.success(f"✅ Upload successful. Job ID: **{data['job_id'][:8]}...**")
+                    # POST to /upload endpoint
+                    response = requests.post(
+                        f"{backend_url}/upload",
+                        files=files,
+                        timeout=60
+                    )
+                    response.raise_for_status()
+                    result = response.json()
+                    
+                    # Extract job_id
+                    job_id = result.get('job_id')
+                    
+                    if not job_id:
+                        st.error("❌ Upload failed: No job ID received from backend")
+                        st.stop()
+                    
+                    # Store job_id in session state
+                    st.session_state.current_job_id = job_id
+                    st.session_state.job_status = 'processing'
+                    
+                    st.success(f"✅ Upload successful! **Job ID:** `{job_id}`")
+                    
+                except requests.exceptions.Timeout:
+                    st.error("❌ Upload timeout: Backend did not respond in time")
+                    st.stop()
+                except requests.exceptions.RequestException as e:
+                    st.error(f"❌ Upload failed: {str(e)}")
+                    st.info("💡 Ensure backend is running at: " + backend_url)
+                    st.stop()
+            
+            # --- AUTO-POLLING STATUS ---
+            st.markdown("---")
+            st.markdown("""
+                <h3 style='font-family: Orbitron; color: #E60000; text-shadow: 0 0 10px #E6000080;'>
+                    🔄 Processing Status (Auto-Polling)
+                </h3>
+            """, unsafe_allow_html=True)
+            
+            status_placeholder = st.empty()
+            progress_bar = st.progress(0)
+            
+            max_retries = 120  # 4 minutes max (2 sec intervals)
+            retry_count = 0
+            
+            while retry_count < max_retries:
+                try:
+                    # GET /status/{job_id}
+                    status_response = requests.get(
+                        f"{backend_url}/status/{st.session_state.current_job_id}",
+                        timeout=10
+                    )
+                    status_response.raise_for_status()
+                    status_data = status_response.json()
+                    
+                    job_status = status_data.get('status', 'unknown')
+                    
+                    if job_status == 'processing':
+                        status_placeholder.info(
+                            f"⏳ **Processing...** ({retry_count * 2}s elapsed)"
+                        )
+                        progress_bar.progress(min(retry_count / max_retries, 0.9))
+                        st.session_state.job_status = 'processing'
+                        
+                    elif job_status == 'completed':
+                        status_placeholder.success("✅ **Analysis completed!**")
+                        progress_bar.progress(1.0)
+                        st.session_state.job_status = 'completed'
+                        
+                        # ✅ FIX: Navigate to Results page
                         time.sleep(1)
+                        st.balloons()
+                        st.query_params["page"] = "Results / Dashboard"
                         st.rerun()
-                    elif response.status_code == 400:
-                        st.error(f"❌ Upload Failed (400): {response.json().get('message', 'Invalid file type.')}")
+                        
+                    elif job_status == 'failed':
+                        error_msg = status_data.get('error', 'Unknown error')
+                        status_placeholder.error(f"❌ **Processing failed:** {error_msg}")
+                        st.session_state.job_status = 'failed'
+                        break
+                    
                     else:
-                        st.error(f"❌ Upload Failed ({response.status_code}): Server error. Try again.")
-                except requests.exceptions.ConnectionError:
-                    st.error(f"❌ Connection Error: Backend API not reachable at {backend_url}. Please ensure the server is running.")
-                except Exception as e:
-                    st.exception(f"An unexpected error occurred: {e}")
-
-def poll_status_ui(backend_url):
-    """Manages the polling loop and progress bar display."""
-    job_id = st.session_state.current_job_id
-    status_placeholder = st.empty()
-    progress_placeholder = st.empty()
-    
-    max_wait_time = 600  # 10 minutes
-    start_time = time.time()
-    
-    while st.session_state.job_status in ['queued', 'processing'] and (time.time() - start_time < max_wait_time):
-        elapsed_time = time.time() - start_time
-        
-        try:
-            response = requests.get(f"{backend_url}/status/{job_id}", timeout=5)
+                        status_placeholder.warning(f"⚠️ **Unknown status:** {job_status}")
+                    
+                    time.sleep(2)
+                    retry_count += 1
+                    
+                except requests.exceptions.RequestException as e:
+                    status_placeholder.error(f"❌ **Status check failed:** {str(e)}")
+                    break
             
-            if response.status_code == 200:
-                data = response.json()
-                st.session_state.job_status = data['status']
-                
-                with status_placeholder.container():
-                    st.markdown(f"**Status:** {data['status'].upper()} | **Elapsed Time:** {elapsed_time:.1f}s")
-                
-                with progress_placeholder:
-                    if data['status'] == 'processing':
-                        st.progress(0.5)
-                    else:
-                        st.progress(0.0)
-            elif response.status_code == 404:
-                st.session_state.job_status = 'failed'
-                status_placeholder.error(f"❌ Job Not Found (404). ID: {job_id[:8]}...")
-                break
-        except requests.exceptions.RequestException:
-            status_placeholder.warning("⚠️ Polling interrupted. Retrying...")
-            pass
-        
-        time.sleep(2)
+            # Timeout warning
+            if retry_count >= max_retries:
+                status_placeholder.warning(
+                    "⚠️ Processing is taking longer than expected. "
+                    "Check **Results / Dashboard** page manually."
+                )
     
-    if st.session_state.job_status in ['completed', 'failed']:
-        get_results(backend_url, job_id, status_placeholder, progress_placeholder)
-    elif time.time() - start_time >= max_wait_time:
-        status_placeholder.error("❌ Polling Timeout (10 minutes). Worker may have stalled.")
-        st.session_state.job_status = 'failed'
+    else:
+        # No file uploaded
+        st.info("ℹ️ **Please upload a video file to begin analysis.**")
+    
+    # --- INSTRUCTIONS SECTION ---
+    st.markdown("---")
+    st.markdown("""
+        <div style='background: #080808; padding: 20px; border-radius: 10px; 
+             border: 1px solid #E6000040;'>
+            <h3 style='font-family: Orbitron; color: #E60000;'>📖 Instructions</h3>
+            <ol style='color: #E0E0E0; line-height: 1.8;'>
+                <li><strong>Upload</strong> a video file (MP4, AVI, or MOV format)</li>
+                <li><strong>Click</strong> "Initiate Analysis" to start processing</li>
+                <li><strong>Wait</strong> for auto-polling to complete (~10-30 seconds)</li>
+                <li><strong>View</strong> results automatically when processing finishes</li>
+            </ol>
+            <p style='color: #888; margin-top: 15px;'>
+                <strong>Note:</strong> Maximum file size is 500 MB. 
+                Processing time varies based on video length and complexity.
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # --- BACKEND INTEGRATION INFO (DEBUG) ---
+    with st.expander("🔧 Backend Integration Details", expanded=False):
+        st.code(f"""
+Endpoint: POST {backend_url}/upload
+Expected Response: {{"job_id": "...", "status": "processing", "message": "..."}}
 
-def get_results(backend_url, job_id, status_placeholder, progress_placeholder):
-    """Fetches the final results and updates global state."""
-    progress_placeholder.empty()
-    
-    try:
-        response = requests.get(f"{backend_url}/results/{job_id}", timeout=5)
-        
-        if response.status_code == 200:
-            data = response.json()
-            st.session_state.job_result = data
-            st.session_state.verdict = data['verdict']
-            st.session_state.job_status = data['status']
-            
-            status_placeholder.success(f"✅ Analysis complete! Verdict: **{data['verdict'].upper()}**")
-            st.query_params["page"] = "Results / Dashboard"
-            st.rerun()
-        elif response.status_code == 400 and st.session_state.job_status == 'failed':
-            data = response.json()
-            st.session_state.job_result = data
-            st.session_state.verdict = 'Fake'
-            status_placeholder.error(f"❌ Analysis Failed: {data.get('error_message', 'Unknown error')}")
-            st.query_params["page"] = "Results / Dashboard"
-            st.rerun()
-    except requests.exceptions.RequestException:
-        status_placeholder.error("❌ Failed to connect for final results. Check API health.")
+Status Polling: GET {backend_url}/status/<job_id>
+Expected Response: {{"job_id": "...", "status": "processing|completed|failed", "verdict": "..."}}
+
+File Key: 'video' (not 'file')
+Max File Size: 500 MB
+Allowed Extensions: .mp4, .avi, .mov
+        """)

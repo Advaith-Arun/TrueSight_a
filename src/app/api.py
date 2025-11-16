@@ -13,7 +13,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import Tuple
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
@@ -277,7 +277,7 @@ def get_results(job_id: str):
     response = job.to_dict()     
                        
     # Add threshold field (CRITICAL - required by frontend)
-    response['threshold'] = 0.3  # ✅ Add this line
+    response['threshold'] = 0.5  # ✅ Add this line
     
     logger.info(f"Returning results for job {job_id}: {job.verdict}")
     return jsonify(response), 200
@@ -338,6 +338,54 @@ def get_statistics():
     stats = db.get_statistics()
     
     return jsonify(stats), 200
+
+@app.route('/gradcam/<jobid>/<path:filename>', methods=['GET'])
+def serve_gradcam_image(jobid: str, filename: str):
+    """Serve Grad-CAM visualization images."""
+    try:
+        # Get job from database
+        job = db.get_job(jobid)
+        if not job:
+            return jsonify({'error': 'Job not found'}), 404
+
+        if not job.gradcam_enabled:
+            return jsonify({'error': 'Grad-CAM not available'}), 404
+
+        # Get project root
+        project_root = Path(__file__).parent.parent.parent
+        gradcam_dir = job.gradcam_dir
+        
+        if not Path(gradcam_dir).is_absolute():
+            gradcam_dir = project_root / gradcam_dir
+        else:
+            gradcam_dir = Path(gradcam_dir)
+        
+        # ✅ FIX: Check both root and overlays subdirectory
+        # First try: direct path (for average_heatmap.jpg)
+        image_path = gradcam_dir / filename
+        
+        # Second try: in overlays subdirectory (for frame_xxx_overlay.jpg)
+        if not image_path.exists():
+            image_path = gradcam_dir / 'overlays' / filename
+        
+        if not image_path.exists():
+            logger.error(f"Grad-CAM file not found: {image_path}")
+            return jsonify({
+                'error': 'File not found',
+                'tried_paths': [
+                    str(gradcam_dir / filename),
+                    str(gradcam_dir / 'overlays' / filename)
+                ]
+            }), 404
+
+        return send_file(str(image_path), mimetype='image/jpeg')
+    
+    except Exception as e:
+        logger.error(f"Error serving Grad-CAM image: {str(e)}")
+        return jsonify({
+            'error': 'Failed to serve image',
+            'message': str(e)
+        }), 500
 
 
 @app.errorhandler(413)

@@ -19,6 +19,7 @@ build/
 /data_processed/
 /src/app/temp_processing/id1_001_real/*
 /src/app/temp_processing/*
+/test_data_processed
 *.mp4
 *.avi
 *.mov
@@ -60,7 +61,11 @@ Thumbs.db
 .env.local
 
 # Results
+/results
 results/*.png
 results/*.txt
 results/*.csv
 results/*.json
+
+
+/test_single_video.py

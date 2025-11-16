@@ -5,7 +5,7 @@ torchvision==0.21.0
 torchaudio==2.6.0
 
 # Computer Vision & Image Processing
-opencv-python-headless==4.9.0.80
+opencv-python==4.9.0.80  # Use headless for production deployment
 Pillow==10.2.0
 albumentations==1.4.0
 

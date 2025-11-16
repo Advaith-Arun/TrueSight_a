@@ -61,10 +61,10 @@ class VideoProcessor:
         Args:
             video_path: Path to the uploaded video file (string or Path)
             num_frames: Number of frames to sample (default: 8)
-        
+            
         Returns:
             Processed video tensor of shape [1, 8, 3, 224, 224] ready for model inference
-        
+            
         Raises:
             ValueError: If no faces detected or insufficient frames
             RuntimeError: If preprocessing fails
@@ -103,12 +103,16 @@ class VideoProcessor:
             logger.info("Preprocessing completed")
             
             # Step 2: Locate the face crops
+            # Person 2's output structure: output_dir/train/*/video_name/crops/
             crops_dir = self._find_crops_directory(output_dir, video_name)
+            
             if crops_dir is None:
                 raise ValueError(f"No crops directory found. Face detection may have failed.")
             
             # Step 3: Load and sample face crops
             crop_files = sorted(crops_dir.glob("crop_*.jpg"))
+            
+            # Filter out augmented crops (only use original crops)
             crop_files = [f for f in crop_files if '_aug' not in f.name]
             
             if len(crop_files) == 0:
@@ -116,7 +120,7 @@ class VideoProcessor:
             
             logger.info(f"Found {len(crop_files)} face crops")
             
-            # Step 4: Sample frames (may return fewer than num_frames)
+            # Step 4: Sample exactly num_frames (default 8)
             sampled_crops = self._sample_frames(crop_files, num_frames)
             logger.info(f"Sampled {len(sampled_crops)} frames")
             
@@ -124,36 +128,24 @@ class VideoProcessor:
             frames = []
             for crop_path in sampled_crops:
                 img = Image.open(crop_path).convert('RGB')
+                # Apply normalization (includes ToTensor)
                 tensor = self.normalize(img)
                 frames.append(tensor)
             
             # Step 6: Stack into model input format [1, num_frames, 3, 224, 224]
             video_tensor = torch.stack(frames).unsqueeze(0)
+            
             logger.info(f"Created tensor of shape: {video_tensor.shape}")
             
-            # ✅ FIXED: Handle variable frame counts with padding
-            actual_frames = video_tensor.shape[1]
-            if actual_frames < num_frames:
-                # Pad by repeating the last frame
-                logger.info(f"Padding from {actual_frames} to {num_frames} frames")
-                last_frame = video_tensor[:, -1:, :, :, :]  # Shape: [1, 1, 3, 224, 224]
-                repeat_count = num_frames - actual_frames
-                padding = last_frame.repeat(1, repeat_count, 1, 1, 1)  # Shape: [1, repeat_count, 3, 224, 224]
-                video_tensor = torch.cat([video_tensor, padding], dim=1)
-                logger.info(f"Padded tensor shape: {video_tensor.shape}")
-            elif actual_frames > num_frames:
-                # Truncate if somehow we got too many
-                logger.warning(f"Truncating from {actual_frames} to {num_frames} frames")
-                video_tensor = video_tensor[:, :num_frames, :, :, :]
-            
-            # Verify final shape
+            # Verify shape
             expected_shape = (1, num_frames, 3, 224, 224)
             if video_tensor.shape != expected_shape:
                 raise RuntimeError(
-                    f"Unexpected tensor shape after padding: {video_tensor.shape}. "
+                    f"Unexpected tensor shape: {video_tensor.shape}. "
                     f"Expected: {expected_shape}"
                 )
             
+            # ✅ FIXED: Return only the tensor (cleanup handled separately)
             return video_tensor
             
         except Exception as e:
@@ -162,7 +154,6 @@ class VideoProcessor:
             if output_dir.exists():
                 shutil.rmtree(output_dir)
             raise RuntimeError(f"Video processing failed: {str(e)}")
-
     
     def _find_crops_directory(self, output_dir: Path, video_name: str) -> Path:
         """
@@ -180,61 +171,38 @@ class VideoProcessor:
         # Return the first one found (there should only be one for single video)
         return crops_dirs[0]
     
-    def _sample_frames(self, frame_paths, num_frames=8):
+    def _sample_frames(self, frame_paths: List[Path], num_frames: int = 8) -> List[Path]:
         """
-        Sample frames matching Person 1's training preprocessing.
-        Handle multiple faces per frame (crop_FRAME_FACE.jpg format).
+        Sample exactly num_frames uniformly from the available frames.
         
-        If fewer frames available, returns all available frames (will be padded later).
-        """
-        from collections import defaultdict
-        import re
+        If fewer frames than requested, pad by repeating the last frame.
+        If more frames than requested, sample uniformly.
         
-        # Group crops by frame number
-        frames_dict = defaultdict(list)
-        for crop_path in frame_paths:
-            filename = crop_path.stem  # "crop_00005_01"
+        Args:
+            frame_paths: List of paths to frame images
+            num_frames: Number of frames to sample
             
-            # Try to parse Person 1's format: crop_FRAME_FACE
-            match = re.match(r'crop_(\d+)_(\d+)', filename)
-            if match:
-                frame_num = int(match.group(1))
-                face_num = int(match.group(2))
-                frames_dict[frame_num].append((face_num, crop_path))
-            else:
-                # Fallback: simple numbering crop_XXXX
-                match = re.search(r'crop_(\d+)', filename)
-                if match:
-                    frame_num = int(match.group(1))
-                    frames_dict[frame_num].append((0, crop_path))
+        Returns:
+            List of sampled frame paths (length = num_frames)
+        """
+        total_frames = len(frame_paths)
         
-        # Select FIRST face (face_00) from each frame, sorted by frame number
-        unique_frames = []
-        for frame_num in sorted(frames_dict.keys()):
-            # Sort by face number, take the first (face_00)
-            faces = sorted(frames_dict[frame_num], key=lambda x: x[0])
-            unique_frames.append(faces[0][1])  # Take the crop_path
-        
-        total_frames = len(unique_frames)
-        if total_frames == 0:
-            raise ValueError("No valid face crops found!")
-        
-        logger.info(f"Found {total_frames} unique frames from {len(frame_paths)} total crops")
-        
-        # Sample uniformly
-        if total_frames <= num_frames:
-            # ✅ FIXED: Return all available frames (will pad later if needed)
-            sampled = unique_frames
-            logger.info(f"Sampled {len(sampled)} frames (fewer than {num_frames}, will pad)")
-        else:
+        if total_frames >= num_frames:
+            # Sample uniformly
             step = total_frames / num_frames
             indices = [int(i * step) for i in range(num_frames)]
-            sampled = [unique_frames[i] for i in indices]
-            logger.info(f"Sampled {len(sampled)} frames")
+            sampled = [frame_paths[i] for i in indices]
+        else:
+            # Pad by repeating last frame
+            sampled = list(frame_paths)
+            padding_needed = num_frames - total_frames
+            sampled.extend([frame_paths[-1]] * padding_needed)
+            logger.warning(
+                f"Video has only {total_frames} frames. "
+                f"Padding with last frame {padding_needed} times."
+            )
         
         return sampled
-
-
     
     def cleanup(self):
         """
