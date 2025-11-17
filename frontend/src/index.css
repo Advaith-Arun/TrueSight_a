@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Cyberpunk Red Theme */
+    --background: 0 0% 5.9%; /* #0f0f0f deep black */
+    --foreground: 0 0% 95%; /* light grey text */
+
+    --card: 0 0% 10.2%; /* #1a1a1a card background */
+    --card-foreground: 0 0% 95%;
+
+    --popover: 0 0% 10.2%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 14 100% 50%; /* #ff3d00 cyberpunk red */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 95%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 14 100% 50%; /* red accent */
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 9 100% 50%; /* #ff1a00 danger red */
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 137 100% 50%; /* #00ff41 green for REAL */
+    --success-dark: 137 100% 40%; /* #00cc34 darker green */
+    --success-foreground: 0 0% 0%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 15%;
+    --ring: 14 100% 50%;
+
+    --radius: 0.5rem;
+
+    /* Gradients */
+    --gradient-fake: linear-gradient(135deg, hsl(9 100% 50%), hsl(14 100% 50%));
+    --gradient-real: linear-gradient(135deg, hsl(137 100% 50%), hsl(137 100% 40%));
+    --gradient-glow: radial-gradient(circle, hsl(14 100% 50% / 0.3), transparent);
+
+    /* Shadows */
+    --shadow-red-glow: 0 0 30px hsl(14 100% 50% / 0.4);
+    --shadow-green-glow: 0 0 30px hsl(137 100% 50% / 0.4);
+    --shadow-card: 0 10px 40px hsl(0 0% 0% / 0.8);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-orbitron;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-orbitron;
+  }
+}
+
+/* Custom animations */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 40px hsl(var(--primary) / 0.8);
+  }
+}
+
+@keyframes pulse-glow-green {
+  0%, 100% {
+    box-shadow: 0 0 20px hsl(var(--success) / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 40px hsl(var(--success) / 0.8);
+  }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.pulse-glow-green {
+  animation: pulse-glow-green 2s ease-in-out infinite;
+}
+
+.spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
