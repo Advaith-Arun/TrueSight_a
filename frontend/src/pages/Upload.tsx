@@ -1,5 +1,6 @@
 import { FileUpload } from "@/components/FileUpload";
 import { Header } from "@/components/Header";
+import Galaxy from "@/components/Galaxy";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
@@ -38,41 +39,46 @@ const Upload = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-black">
-
-      {/* 🔳 Subtle cyber grid */}
-      <div className="absolute inset-0 cyber-grid pointer-events-none"></div>
-
-      {/* 🔺 Pulsating red cyber squares */}
-      <div className="absolute top-6 right-6 w-28 h-28 border-2 border-primary opacity-20 animate-pulse rounded-md"></div>
-      <div className="absolute bottom-6 left-6 w-20 h-20 border border-primary opacity-15 animate-pulse rounded-sm"></div>
+      {/* Galaxy background */}
+      <Galaxy 
+        mouseInteraction={false}
+        mouseRepulsion={false}
+        hueShift={0}
+        density={0.8}
+        glowIntensity={0.4}
+        saturation={1.0}
+        speed={0.8}
+        twinkleIntensity={0.4}
+      />
 
       <Header />
 
-      <div className="container mx-auto px-4 py-8 relative z-10">
-
-        {/* 🔙 Back button with glow */}
+      <div className="container mx-auto px-4 py-12 relative z-10">
+        {/* Back button - subtle and intentional */}
         <Button
           variant="ghost"
           onClick={() => navigate("/")}
-          className="mb-4 white-cyber-glow"
+          className="mb-12 text-zinc-300 hover:text-white transition-colors duration-300 flex items-center gap-2 text-sm font-medium tracking-wide"
         >
-          <ArrowLeft className="mr-2 h-4 w-4 icon-pulse-soft" />
-          Back to Home
+          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+          <span>Return</span>
         </Button>
 
-        {/* Title + subtitle */}
-        <div className="max-w-2xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2 red-soft-glow">
-              New Analysis Request
+        {/* Glassmorphic header section */}
+        <div className="max-w-3xl mx-auto mb-12">
+          <div className="space-y-4">
+            <h1 className="text-3xl md:text-4xl font-black tracking-tight upload-video-glow">
+              <span className="text-white">Upload</span>
+              <span className="text-red-500 ml-3">Video</span>
             </h1>
-
-            <p className="text-muted-foreground white-soft-glow">
-              Upload a video file to begin deepfake detection analysis
+            <p className="text-lg text-zinc-400 max-w-xl leading-relaxed tracking-wide">
+              Submit your video for advanced deepfake detection analysis. Our ensemble model will identify and visualize suspicious regions with precision.
             </p>
           </div>
+        </div>
 
-          {/* Upload Box */}
+        {/* Content wrapper with layered glassmorphism */}
+        <div className="max-w-3xl mx-auto">
           <FileUpload
             onFileSelect={handleFileSelect}
             isUploading={isUploading}

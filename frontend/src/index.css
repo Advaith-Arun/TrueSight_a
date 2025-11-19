@@ -375,3 +375,23 @@ All colors MUST be HSL.
     0 0 8px hsl(var(--primary)),
     0 0 14px hsl(var(--primary) / 0.8);
 }
+
+@keyframes upload-video-glow {
+  0%,
+  100% {
+    text-shadow:
+      0 0 10px rgba(238, 75, 43, 0.4),
+      0 0 20px rgba(238, 75, 43, 0.2);
+  }
+
+  50% {
+    text-shadow:
+      0 0 20px rgba(238, 75, 43, 0.8),
+      0 0 40px rgba(238, 75, 43, 0.5),
+      0 0 60px rgba(238, 75, 43, 0.3);
+  }
+}
+
+.upload-video-glow {
+  animation: upload-video-glow 2.5s ease-in-out infinite;
+}

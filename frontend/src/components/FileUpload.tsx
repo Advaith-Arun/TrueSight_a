@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { CloudUpload, Upload, X } from "lucide-react";
+import { CloudUpload, Upload, X, CheckCircle2 } from "lucide-react";
 import { useCallback, useState } from "react";
 
 interface FileUploadProps {
@@ -88,16 +88,21 @@ export const FileUpload = ({ onFileSelect, isUploading }: FileUploadProps) => {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
+      {/* Upload Zone - Glassmorphic */}
       <div
-        className={`relative border-2 border-dashed rounded-lg p-8 transition-all ${isDragging
-          ? "border-primary bg-primary/10 shadow-red-glow"
-          : "border-border/50 hover:border-primary/50"
-          }`}
+        className={`relative group rounded-2xl overflow-hidden backdrop-blur-xl transition-all duration-500 ${
+          isDragging
+            ? 'bg-red-500/20 border border-red-500/40 shadow-lg shadow-red-500/20'
+            : 'bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/8 shadow-lg shadow-black/20'
+        }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
+        {/* Gradient accent on hover */}
+        <div className="absolute inset-0 bg-gradient-to-br from-red-500/0 to-red-500/0 group-hover:from-red-500/5 group-hover:to-transparent transition-all duration-500 pointer-events-none"></div>
+
         <input
           type="file"
           id="video-upload"
@@ -107,78 +112,106 @@ export const FileUpload = ({ onFileSelect, isUploading }: FileUploadProps) => {
           disabled={isUploading}
         />
 
-        <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <CloudUpload className="w-16 h-16 text-primary/70 icon-upload-pulse" />
-
+        <div className="relative p-12 md:p-16 text-center">
+          {/* Icon with subtle animation */}
+          <div className="flex justify-center mb-6">
+            <div className={`transition-all duration-500 ${
+              isDragging ? 'scale-110 text-red-500' : 'text-zinc-500 group-hover:text-white'
+            }`}>
+              <CloudUpload className="w-20 h-20" strokeWidth={1.2} />
+            </div>
           </div>
 
-          <div>
-            <h3 className="text-lg font-semibold text-foreground mb-2 red-soft-glow">
-
-              Upload Video (MP4, AVI, MOV)
+          {/* Text hierarchy - typography weight and opacity */}
+          <div className="space-y-3">
+            <h3 className="text-2xl font-semibold text-white tracking-tight">
+              {isDragging ? 'Drop your video here' : 'Choose a video to analyze'}
             </h3>
-            <p className="text-sm text-muted-foreground">
-              Drag and drop file here
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Limit 500MB per file • MP4, AVI, MOV, MPEG4
+            <p className="text-zinc-400 text-base leading-relaxed max-w-md mx-auto">
+              {isDragging
+                ? 'We\'re ready to receive your file'
+                : 'Drag and drop MP4, AVI, or MOV • Maximum 500MB'}
             </p>
           </div>
 
-          <label htmlFor="video-upload">
+          {/* Browse button - pill shaped with intentional hover */}
+          <label htmlFor="video-upload" className="inline-block mt-8">
             <Button
               type="button"
               variant="outline"
-              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground white-soft-glow"
               disabled={isUploading}
-              onClick={() => document.getElementById('video-upload')?.click()}
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById('video-upload')?.click();
+              }}
+              className="rounded-full px-8 py-6 text-base font-medium border border-white/20 hover:border-white/40 text-white hover:bg-white/10 transition-all duration-300 flex items-center gap-2"
             >
-              <Upload className="w-4 h-4 mr-2" />
-              Browse files
+              <Upload className="w-5 h-5" strokeWidth={1.5} />
+              Browse Files
             </Button>
           </label>
         </div>
       </div>
 
+      {/* File preview - Layered glassmorphic panel */}
       {selectedFile && (
-        <div className="bg-card border border-border rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="font-medium text-foreground">{selectedFile.name}</p>
-              <p className="text-sm text-muted-foreground">
-                {formatFileSize(selectedFile.size)}
-              </p>
+        <div className="rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10 overflow-hidden shadow-lg shadow-black/20 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4">
+          {/* File info section */}
+          <div className="p-6 md:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-4 flex-1 min-w-0">
+                {/* Status indicator */}
+                <div className="mt-1 flex-shrink-0">
+                  <CheckCircle2 className="w-6 h-6 text-green-500" strokeWidth={1.5} />
+                </div>
+
+                {/* File details with typography hierarchy */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-lg font-semibold text-white truncate tracking-tight">
+                    {selectedFile.name}
+                  </p>
+                  <p className="text-sm text-zinc-400 mt-1 font-medium tracking-wide">
+                    {formatFileSize(selectedFile.size)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Clear button - subtle and responsive */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={clearFile}
+                disabled={isUploading}
+                className="rounded-full text-zinc-400 hover:text-red-500 hover:bg-red-500/10 transition-colors duration-300 flex-shrink-0"
+              >
+                <X className="w-5 h-5" strokeWidth={1.5} />
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={clearFile}
-              disabled={isUploading}
-              className="text-muted-foreground hover:text-destructive"
-            >
-              <X className="w-5 h-5" />
-            </Button>
           </div>
 
-          <Button
-            className="w-full mt-4 bg-primary hover:bg-primary/90 text-primary-foreground font-bold uppercase tracking-wider"
-            onClick={handleUpload}
-            disabled={isUploading}
-            size="lg"
-          >
-            {isUploading ? (
-              <>
-                <Upload className="w-4 h-4 mr-2 animate-spin" />
-                Uploading...
-              </>
-            ) : (
-              <>
-                <Upload className="w-4 h-4 mr-2" />
-                Initiate Analysis
-              </>
-            )}
-          </Button>
+          {/* Divider */}
+          <div className="h-px bg-gradient-to-r from-white/0 via-white/10 to-white/0"></div>
+
+          {/* Action section */}
+          <div className="p-6 md:p-8">
+            <Button
+              onClick={handleUpload}
+              disabled={isUploading}
+              className="w-full h-12 rounded-full bg-red-500 hover:bg-red-600 text-white font-semibold text-base tracking-wide transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isUploading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Analyzing...</span>
+                </>
+              ) : (
+                <>
+                  <Upload className="w-5 h-5" strokeWidth={1.5} />
+                  <span>Begin Analysis</span>
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       )}
     </div>
