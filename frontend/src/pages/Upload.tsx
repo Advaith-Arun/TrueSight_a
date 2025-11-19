@@ -1,6 +1,6 @@
 import { FileUpload } from "@/components/FileUpload";
-import { Header } from "@/components/Header";
 import Galaxy from "@/components/Galaxy";
+import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
@@ -40,7 +40,7 @@ const Upload = () => {
   return (
     <div className="min-h-screen relative overflow-hidden bg-black">
       {/* Galaxy background */}
-      <Galaxy 
+      <Galaxy
         mouseInteraction={false}
         mouseRepulsion={false}
         hueShift={0}

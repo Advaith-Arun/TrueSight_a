@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { CloudUpload, Upload, X, CheckCircle2 } from "lucide-react";
+import { CheckCircle2, CloudUpload, Upload, X } from "lucide-react";
 import { useCallback, useState } from "react";
 
 interface FileUploadProps {
@@ -91,11 +91,10 @@ export const FileUpload = ({ onFileSelect, isUploading }: FileUploadProps) => {
     <div className="w-full space-y-6">
       {/* Upload Zone - Glassmorphic */}
       <div
-        className={`relative group rounded-2xl overflow-hidden backdrop-blur-xl transition-all duration-500 ${
-          isDragging
+        className={`relative group rounded-2xl overflow-hidden backdrop-blur-xl transition-all duration-500 ${isDragging
             ? 'bg-red-500/20 border border-red-500/40 shadow-lg shadow-red-500/20'
             : 'bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/8 shadow-lg shadow-black/20'
-        }`}
+          }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -115,9 +114,8 @@ export const FileUpload = ({ onFileSelect, isUploading }: FileUploadProps) => {
         <div className="relative p-12 md:p-16 text-center">
           {/* Icon with subtle animation */}
           <div className="flex justify-center mb-6">
-            <div className={`transition-all duration-500 ${
-              isDragging ? 'scale-110 text-red-500' : 'text-zinc-500 group-hover:text-white'
-            }`}>
+            <div className={`transition-all duration-500 ${isDragging ? 'scale-110 text-red-500' : 'text-zinc-500 group-hover:text-white'
+              }`}>
               <CloudUpload className="w-20 h-20" strokeWidth={1.2} />
             </div>
           </div>

@@ -377,6 +377,7 @@ All colors MUST be HSL.
 }
 
 @keyframes upload-video-glow {
+
   0%,
   100% {
     text-shadow:
