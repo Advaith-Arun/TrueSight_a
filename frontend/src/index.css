@@ -9,16 +9,20 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* Cyberpunk Red Theme */
-    --background: 0 0% 5.9%; /* #0f0f0f deep black */
-    --foreground: 0 0% 95%; /* light grey text */
+    --background: 0 0% 5.9%;
+    /* #0f0f0f deep black */
+    --foreground: 0 0% 95%;
+    /* light grey text */
 
-    --card: 0 0% 10.2%; /* #1a1a1a card background */
+    --card: 0 0% 10.2%;
+    /* #1a1a1a card background */
     --card-foreground: 0 0% 95%;
 
     --popover: 0 0% 10.2%;
     --popover-foreground: 0 0% 95%;
 
-    --primary: 14 100% 50%; /* #ff3d00 cyberpunk red */
+    --primary: 0 100% 50%;
+    /* #ff0000 bright red */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 15%;
@@ -27,14 +31,18 @@ All colors MUST be HSL.
     --muted: 0 0% 15%;
     --muted-foreground: 0 0% 60%;
 
-    --accent: 14 100% 50%; /* red accent */
+    --accent: 14 100% 50%;
+    /* red accent */
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 9 100% 50%; /* #ff1a00 danger red */
+    --destructive: 9 100% 50%;
+    /* #ff1a00 danger red */
     --destructive-foreground: 0 0% 100%;
 
-    --success: 137 100% 50%; /* #00ff41 green for REAL */
-    --success-dark: 137 100% 40%; /* #00cc34 darker green */
+    --success: 137 100% 50%;
+    /* #00ff41 green for REAL */
+    --success-dark: 137 100% 40%;
+    /* #00cc34 darker green */
     --success-foreground: 0 0% 0%;
 
     --border: 0 0% 20%;
@@ -64,25 +72,36 @@ All colors MUST be HSL.
     @apply bg-background text-foreground font-orbitron;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-orbitron;
   }
 }
 
 /* Custom animations */
 @keyframes pulse-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 20px hsl(var(--primary) / 0.4);
   }
+
   50% {
     box-shadow: 0 0 40px hsl(var(--primary) / 0.8);
   }
 }
 
 @keyframes pulse-glow-green {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 20px hsl(var(--success) / 0.4);
   }
+
   50% {
     box-shadow: 0 0 40px hsl(var(--success) / 0.8);
   }
@@ -92,6 +111,7 @@ All colors MUST be HSL.
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -107,4 +127,251 @@ All colors MUST be HSL.
 
 .spin-slow {
   animation: spin-slow 3s linear infinite;
+}
+
+/* =========================================================
+   GLOBAL THEME WRAPPERS — Hacker Green + Danger Red
+   ========================================================= */
+
+/* 🚨 DANGER RED THEME (FAKE) */
+.danger-theme {
+  background: radial-gradient(circle, hsl(0 100% 10%), hsl(0 100% 3%), black);
+  box-shadow: var(--shadow-red-glow);
+  position: relative;
+  overflow: hidden;
+}
+
+.danger-theme::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.08;
+  background: repeating-linear-gradient(0deg,
+      rgba(255, 50, 50, 0.1) 0px,
+      rgba(255, 50, 50, 0.15) 2px,
+      transparent 3px);
+}
+
+/* Text glow for FAKE */
+.red-warning-glow {
+  color: hsl(var(--primary));
+  text-shadow: 0 0 10px hsl(var(--primary)), 0 0 20px hsl(var(--primary) / 0.8);
+  animation: pulse-glow 1.8s infinite alternate;
+}
+
+
+/* 🟩 HACKER GREEN THEME (REAL) */
+.hacker-theme {
+  background: radial-gradient(circle, hsl(var(--success-dark)), black);
+  position: relative;
+  overflow: hidden;
+}
+
+.hacker-theme::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.15;
+  background-image: linear-gradient(180deg,
+      hsl(var(--success) / 0.2) 0%,
+      transparent 40%,
+      hsl(var(--success) / 0.2) 100%);
+  animation: matrix-scroll 12s linear infinite;
+}
+
+/* Matrix scrolling background animation */
+@keyframes matrix-scroll {
+  0% {
+    transform: translateY(-100%);
+  }
+
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+/* Text glow for REAL */
+.green-hacker-glow {
+  color: hsl(var(--success));
+  text-shadow: 0 0 12px hsl(var(--success)), 0 0 20px hsl(var(--success) / 0.8);
+  animation: pulse-glow-green 1.8s infinite alternate;
+}
+
+/* Subtle white cyber-security grid */
+.cyber-grid {
+  background-image:
+    linear-gradient(white 1px, transparent 1px),
+    linear-gradient(90deg, white 1px, transparent 1px);
+  background-size: 50px 50px;
+  opacity: 0.05;
+}
+
+@keyframes node-pulse {
+
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.6;
+    transform: scale(1.4);
+  }
+}
+
+.node-pulse {
+  animation: node-pulse 3s ease-in-out infinite;
+}
+
+@keyframes rain-drop {
+  0% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+
+  100% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+}
+
+.rain-drop {
+  animation: rain-drop 2.5s linear infinite;
+  opacity: 0.3;
+}
+
+.red-cyber-glow {
+  text-shadow:
+    0 0 10px hsl(var(--primary)),
+    0 0 20px hsl(var(--primary)),
+    0 0 40px hsl(var(--primary) / 0.8);
+}
+
+/* =========================================================
+   CYBERSECURITY BACKGROUND SYSTEM (FINAL CLEAN VERSION)
+   ========================================================= */
+
+/* 🔳 Subtle white cyber grid overlay */
+.cyber-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(white 1px, transparent 1px),
+    linear-gradient(90deg, white 1px, transparent 1px);
+  background-size: 50px 50px;
+  opacity: 0.05;
+  pointer-events: none;
+}
+
+/* 🔥 BRIGHT RED NEON MESH (LEFT SIDE) */
+.mesh-left-strong {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 480px;
+  height: 100%;
+  background-image: url("/backgrounds/mesh.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.45;
+  filter: drop-shadow(0 0 35px rgba(255, 0, 0, 0.9));
+  pointer-events: none;
+  animation: mesh-pulse 4s ease-in-out infinite;
+}
+
+/* 🔥 BRIGHT RED NEON MESH (RIGHT SIDE) */
+.mesh-right-strong {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 480px;
+  height: 100%;
+  background-image: url("/backgrounds/mesh.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.45;
+  filter: drop-shadow(0 0 35px rgba(255, 0, 0, 0.9));
+  pointer-events: none;
+  animation: mesh-pulse 4s ease-in-out infinite;
+}
+
+/* ✨ Smooth glowing mesh pulse */
+@keyframes mesh-pulse {
+
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* 🔥 Neon red glow for titles */
+.red-cyber-glow {
+  text-shadow:
+    0 0 10px hsl(var(--primary)),
+    0 0 25px hsl(var(--primary)),
+    0 0 45px hsl(var(--primary) / 0.9),
+    0 0 70px hsl(var(--primary) / 0.7);
+}
+
+/* === Pulsing Neon Glow for Card Icons === */
+@keyframes icon-pulse {
+  0% {
+    filter: drop-shadow(0 0 4px hsl(var(--primary)));
+    opacity: 0.8;
+  }
+
+  50% {
+    filter: drop-shadow(0 0 12px hsl(var(--primary)));
+    opacity: 1;
+  }
+
+  100% {
+    filter: drop-shadow(0 0 4px hsl(var(--primary)));
+    opacity: 0.8;
+  }
+}
+
+.icon-pulse {
+  animation: icon-pulse 2s ease-in-out infinite;
+}
+
+.red-soft-glow {
+  color: hsl(var(--primary));
+  text-shadow:
+    0 0 10px hsl(var(--primary)),
+    0 0 20px hsl(var(--primary) / 0.7);
+}
+
+.white-soft-glow {
+  color: white;
+  text-shadow:
+    0 0 8px rgba(255, 255, 255, 0.8),
+    0 0 14px rgba(255, 255, 255, 0.6);
+}
+
+.icon-upload-pulse {
+  animation: icon-pulse 2.2s ease-in-out infinite;
+}
+
+.white-cyber-glow {
+  color: white;
+  text-shadow:
+    0 0 8px rgba(255, 255, 255, 0.7),
+    0 0 15px rgba(255, 255, 255, 0.5);
+}
+
+.red-cyber-soft {
+  color: hsl(var(--primary));
+  text-shadow:
+    0 0 8px hsl(var(--primary)),
+    0 0 14px hsl(var(--primary) / 0.8);
 }

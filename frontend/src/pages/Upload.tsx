@@ -23,12 +23,13 @@ const Upload = () => {
         description: response.message,
       });
 
-      // Navigate to processing page
       navigate(`/processing/${response.job_id}`);
     } catch (error: any) {
       toast({
         title: "Upload failed",
-        description: error.response?.data?.error || "Failed to upload video. Please try again.",
+        description:
+          error.response?.data?.error ||
+          "Failed to upload video. Please try again.",
         variant: "destructive",
       });
       setIsUploading(false);
@@ -36,27 +37,42 @@ const Upload = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
+    <div className="min-h-screen relative overflow-hidden bg-black">
+
+      {/* 🔳 Subtle cyber grid */}
+      <div className="absolute inset-0 cyber-grid pointer-events-none"></div>
+
+      {/* 🔺 Pulsating red cyber squares */}
+      <div className="absolute top-6 right-6 w-28 h-28 border-2 border-primary opacity-20 animate-pulse rounded-md"></div>
+      <div className="absolute bottom-6 left-6 w-20 h-20 border border-primary opacity-15 animate-pulse rounded-sm"></div>
+
       <Header />
-      <div className="container mx-auto px-4 py-8">
-        {/* ✅ BACK TO HOME BUTTON */}
+
+      <div className="container mx-auto px-4 py-8 relative z-10">
+
+        {/* 🔙 Back button with glow */}
         <Button
           variant="ghost"
           onClick={() => navigate("/")}
-          className="mb-4"
+          className="mb-4 white-cyber-glow"
         >
-          <ArrowLeft className="mr-2 h-4 w-4" />
+          <ArrowLeft className="mr-2 h-4 w-4 icon-pulse-soft" />
           Back to Home
         </Button>
 
+        {/* Title + subtitle */}
         <div className="max-w-2xl mx-auto">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">New Analysis Request</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-3xl font-bold mb-2 red-soft-glow">
+              New Analysis Request
+            </h1>
+
+            <p className="text-muted-foreground white-soft-glow">
               Upload a video file to begin deepfake detection analysis
             </p>
           </div>
 
+          {/* Upload Box */}
           <FileUpload
             onFileSelect={handleFileSelect}
             isUploading={isUploading}

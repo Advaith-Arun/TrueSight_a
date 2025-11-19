@@ -84,16 +84,17 @@ export default function Results() {
   const isFake = results.verdict.toUpperCase() === "FAKE";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
+
+    <div className={isFake ? "danger-theme min-h-screen" : "hacker-theme min-h-screen"}>
+
       <Header />
       <div className="container mx-auto px-4 py-8 space-y-8">
         {/* Verdict Banner */}
         <div
-          className={`relative overflow-hidden rounded-lg p-8 text-center ${
-            isFake
+          className={`relative overflow-hidden rounded-lg p-8 text-center ${isFake
               ? "bg-gradient-to-r from-red-900/50 to-red-800/50 border-2 border-red-500"
               : "bg-gradient-to-r from-green-900/50 to-green-800/50 border-2 border-green-500"
-          }`}
+            }`}
         >
           <div className="flex items-center justify-center gap-4 mb-4">
             {isFake ? (
@@ -102,7 +103,9 @@ export default function Results() {
               <CheckCircle className="h-16 w-16 text-green-500" />
             )}
           </div>
-          <h2 className="text-4xl font-black uppercase tracking-wider mb-2">
+          <h2 className={`text-4xl font-black uppercase tracking-wider mb-2 ${isFake ? "red-warning-glow" : "green-hacker-glow"
+            }`}>
+
             {isFake ? "DEEPFAKE DETECTED" : "AUTHENTIC VIDEO"}
           </h2>
           <p className="text-2xl font-bold">
@@ -197,8 +200,8 @@ export default function Results() {
         {/* Action Buttons */}
         <div className="flex justify-center gap-4">
           {results.gradcam_enabled && (
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               onClick={() => navigate(`/gradcam/${jobId}`)}
               variant="default"
             >
@@ -206,7 +209,7 @@ export default function Results() {
               View Grad-CAM Visualizations
             </Button>
           )}
-          
+
 
           <Button size="lg" onClick={() => navigate("/")} variant="outline">
             <ArrowLeft className="mr-2 h-4 w-4" />

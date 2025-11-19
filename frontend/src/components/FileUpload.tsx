@@ -1,7 +1,7 @@
-import { useState, useCallback } from "react";
-import { Upload, X, CloudUpload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { CloudUpload, Upload, X } from "lucide-react";
+import { useCallback, useState } from "react";
 
 interface FileUploadProps {
   onFileSelect: (file: File) => void;
@@ -56,7 +56,7 @@ export const FileUpload = ({ onFileSelect, isUploading }: FileUploadProps) => {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const file = e.dataTransfer.files[0];
     if (file) {
       handleFileChange(file);
@@ -90,11 +90,10 @@ export const FileUpload = ({ onFileSelect, isUploading }: FileUploadProps) => {
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6">
       <div
-        className={`relative border-2 border-dashed rounded-lg p-8 transition-all ${
-          isDragging
-            ? "border-primary bg-primary/10 shadow-red-glow"
-            : "border-border/50 hover:border-primary/50"
-        }`}
+        className={`relative border-2 border-dashed rounded-lg p-8 transition-all ${isDragging
+          ? "border-primary bg-primary/10 shadow-red-glow"
+          : "border-border/50 hover:border-primary/50"
+          }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -110,11 +109,13 @@ export const FileUpload = ({ onFileSelect, isUploading }: FileUploadProps) => {
 
         <div className="text-center space-y-4">
           <div className="flex justify-center">
-            <CloudUpload className="w-16 h-16 text-primary/70" />
+            <CloudUpload className="w-16 h-16 text-primary/70 icon-upload-pulse" />
+
           </div>
 
           <div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">
+            <h3 className="text-lg font-semibold text-foreground mb-2 red-soft-glow">
+
               Upload Video (MP4, AVI, MOV)
             </h3>
             <p className="text-sm text-muted-foreground">
@@ -129,7 +130,7 @@ export const FileUpload = ({ onFileSelect, isUploading }: FileUploadProps) => {
             <Button
               type="button"
               variant="outline"
-              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground white-soft-glow"
               disabled={isUploading}
               onClick={() => document.getElementById('video-upload')?.click()}
             >
