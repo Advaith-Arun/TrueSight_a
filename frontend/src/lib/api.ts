@@ -59,15 +59,6 @@ export interface JobsListResponse {
   offset: number;
 }
 
-// Then update getAllJobs to use the interface:
-getAllJobs: async (limit: number = 50, offset: number = 0): Promise<JobsListResponse> => {
-  const response = await axios.get(`${API_BASE_URL}/jobs`, {
-    params: { limit, offset }
-  });
-  return response.data;
-}
-
-
 // Model name mapping for display
 export const MODEL_NAME_MAP: { [key: string]: string } = {
   efficientnet: 'EfficientNet-B4',
@@ -80,13 +71,13 @@ export const api = {
   uploadVideo: async (file: File): Promise<UploadResponse> => {
     const formData = new FormData();
     formData.append('video', file);
-    
+
     const response = await axios.post<UploadResponse>(`${API_BASE_URL}/upload`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
-    
+
     return response.data;
   },
 

@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import Galaxy from "@/components/Galaxy";
 import { Header } from "@/components/Header";
+import { useToast } from "@/hooks/use-toast";
 import { api, StatusResponse } from "@/lib/api";
 import { Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
 const Processing = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -50,20 +51,33 @@ const Processing = () => {
   }, [jobId, navigate, toast]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen relative overflow-hidden bg-black">
+      {/* Galaxy background */}
+      <Galaxy
+        mouseInteraction={false}
+        mouseRepulsion={false}
+        hueShift={0}
+        density={0.8}
+        glowIntensity={0.4}
+        saturation={1.0}
+        speed={0.8}
+        twinkleIntensity={0.4}
+        transparent={false}
+      />
+
       <Header />
 
-      <main className="container mx-auto px-4 py-12">
+      <main className="container mx-auto px-4 py-12 relative z-10">
         <div className="max-w-3xl mx-auto">
           <div className="bg-card border border-primary/30 rounded-lg p-8 shadow-card">
             <div className="text-center space-y-8">
               <div className="relative inline-block">
-                <Loader2 className="w-24 h-24 text-primary spin-slow" />
-                <div className="absolute inset-0 bg-gradient-radial from-primary/20 to-transparent blur-xl" />
+                <Loader2 className="w-24 h-24 text-red-500 spin-slow" />
+                <div className="absolute inset-0 bg-gradient-radial from-red-500/20 to-transparent blur-xl" />
               </div>
 
               <div>
-                <h2 className="text-2xl md:text-3xl font-bold text-primary mb-4">
+                <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 upload-video-glow">
                   Analysis In Progress
                 </h2>
                 <p className="text-lg text-muted-foreground">

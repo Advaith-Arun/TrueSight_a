@@ -1,3 +1,4 @@
+import Galaxy from "@/components/Galaxy";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,10 +15,31 @@ export default function Results() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Mock data for frontend preview
+  const mockResults: ResultsResponse = {
+    job_id: "mock_job_001",
+    filename: "sample_video.mp4",
+    status: "completed",
+    verdict: "FAKE",
+    confidence: 0.92,
+    probability: 0.87,
+    file_size_mb: 125.5,
+    processing_time_seconds: 45.23,
+    upload_timestamp: new Date().toISOString(),
+    completion_timestamp: new Date().toISOString(),
+    gradcam_enabled: true,
+    gradcam_frame_count: 24,
+    gradcam_avg_heatmap: "/heatmap.jpg",
+    gradcam_dir: "/gradcam_frames",
+    threshold: 0.5,
+    error_message: null,
+  };
+
   useEffect(() => {
     const fetchResults = async () => {
       if (!jobId) {
-        setError("No job ID provided");
+        // Use mock data for frontend preview
+        setResults(mockResults);
         setLoading(false);
         return;
       }
@@ -84,71 +106,82 @@ export default function Results() {
   const isFake = results.verdict.toUpperCase() === "FAKE";
 
   return (
-
-    <div className={isFake ? "danger-theme min-h-screen" : "hacker-theme min-h-screen"}>
+    <div className="min-h-screen relative overflow-hidden bg-black">
+      {/* Galaxy background */}
+      <Galaxy
+        mouseInteraction={false}
+        mouseRepulsion={false}
+        hueShift={0}
+        density={0.8}
+        glowIntensity={0.4}
+        saturation={1.0}
+        speed={0.8}
+        twinkleIntensity={0.4}
+      />
 
       <Header />
-      <div className="container mx-auto px-4 py-8 space-y-8">
+      <div className="container mx-auto px-4 py-12 max-w-4xl relative z-10">
         {/* Verdict Banner */}
         <div
-          className={`relative overflow-hidden rounded-lg p-8 text-center ${isFake
-              ? "bg-gradient-to-r from-red-900/50 to-red-800/50 border-2 border-red-500"
-              : "bg-gradient-to-r from-green-900/50 to-green-800/50 border-2 border-green-500"
+          className={`relative overflow-hidden rounded-3xl p-8 text-center backdrop-blur-xl border mb-12 ${isFake
+            ? "bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/30 shadow-lg shadow-red-500/10"
+            : "bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/30 shadow-lg shadow-green-500/10"
             }`}
         >
           <div className="flex items-center justify-center gap-4 mb-4">
             {isFake ? (
-              <AlertCircle className="h-16 w-16 text-red-500" />
+              <AlertCircle className="h-16 w-16 text-red-400" />
             ) : (
-              <CheckCircle className="h-16 w-16 text-green-500" />
+              <CheckCircle className="h-16 w-16 text-green-400" />
             )}
           </div>
-          <h2 className={`text-4xl font-black uppercase tracking-wider mb-2 ${isFake ? "red-warning-glow" : "green-hacker-glow"
-            }`}>
-
+          <h2 className={`text-5xl font-black uppercase tracking-wider mb-2 ${isFake ? "text-red-400" : "text-green-400"}`}>
             {isFake ? "DEEPFAKE DETECTED" : "AUTHENTIC VIDEO"}
           </h2>
-          <p className="text-2xl font-bold">
+          <p className={`text-xl font-bold ${isFake ? "text-red-300" : "text-green-300"}`}>
             Confidence: {(results.confidence * 100).toFixed(2)}%
           </p>
         </div>
 
-        <h1 className="text-3xl font-bold text-center">Analysis Report</h1>
+        <h1 className="text-4xl font-black tracking-tight mb-8 text-center">
+          <span className="text-white">Analysis </span>
+          <span className="text-red-500">Report</span>
+        </h1>
 
         {/* Overall Prediction */}
-        <Card>
+        <Card className="backdrop-blur-xl bg-white/5 border-white/10 shadow-xl">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-white">
+              <Activity className="h-5 w-5 text-red-400" />
               Overall Prediction
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Fake Probability</span>
-                  <span className="font-bold text-red-500">
+                  <span className="text-gray-300">Fake Probability</span>
+                  <span className="font-bold text-red-400">
                     {(fakeProb * 100).toFixed(2)}%
                   </span>
                 </div>
-                <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                <div className="h-3 bg-white/10 rounded-full overflow-hidden border border-white/5">
                   <div
-                    className="h-full bg-red-500"
+                    className="h-full bg-gradient-to-r from-red-500 to-red-400"
                     style={{ width: `${fakeProb * 100}%` }}
                   ></div>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Real Probability</span>
-                  <span className="font-bold text-green-500">
+                  <span className="text-gray-300">Real Probability</span>
+                  <span className="font-bold text-green-400">
                     {(realProb * 100).toFixed(2)}%
                   </span>
                 </div>
-                <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                <div className="h-3 bg-white/10 rounded-full overflow-hidden border border-white/5">
                   <div
-                    className="h-full bg-green-500"
+                    className="h-full bg-gradient-to-r from-green-500 to-green-400"
                     style={{ width: `${realProb * 100}%` }}
                   ></div>
                 </div>
@@ -158,60 +191,63 @@ export default function Results() {
         </Card>
 
         {/* Processing Metrics */}
-        <Card>
+        <Card className="backdrop-blur-xl bg-white/5 border-white/10 shadow-xl">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-white">
+              <Clock className="h-5 w-5 text-red-400" />
               Processing Metrics
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Filename</p>
-                <p className="font-semibold">{results.filename}</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Filename</p>
+                <p className="font-semibold text-white">{results.filename}</p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">File Size</p>
-                <p className="font-semibold">{results.file_size_mb.toFixed(2)} MB</p>
+              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">File Size</p>
+                <p className="font-semibold text-white">{results.file_size_mb.toFixed(2)} MB</p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Processing Time</p>
-                <p className="font-semibold">{results.processing_time_seconds.toFixed(2)}s</p>
+              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Processing Time</p>
+                <p className="font-semibold text-white">{results.processing_time_seconds.toFixed(2)}s</p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Job ID</p>
-                <p className="font-mono text-xs">{results.job_id}</p>
+              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Job ID</p>
+                <p className="font-mono text-xs text-gray-300">{results.job_id}</p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Upload Time</p>
-                <p className="font-semibold">
+              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Upload Time</p>
+                <p className="font-semibold text-white text-sm">
                   {new Date(results.upload_timestamp).toLocaleString()}
                 </p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Frames Analyzed</p>
-                <p className="font-semibold">{results.gradcam_frame_count}</p>
+              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Frames Analyzed</p>
+                <p className="font-semibold text-white">{results.gradcam_frame_count}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Action Buttons */}
-        <div className="flex justify-center gap-4">
+        <div className="flex justify-center gap-4 pt-4">
           {results.gradcam_enabled && (
             <Button
               size="lg"
               onClick={() => navigate(`/gradcam/${jobId}`)}
-              variant="default"
+              className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold rounded-full px-8"
             >
               <Eye className="mr-2 h-4 w-4" />
               View Grad-CAM Visualizations
             </Button>
           )}
 
-
-          <Button size="lg" onClick={() => navigate("/")} variant="outline">
+          <Button
+            size="lg"
+            onClick={() => navigate("/")}
+            className="bg-white/10 hover:bg-white/20 text-white font-bold rounded-full px-8 border border-white/20 backdrop-blur-xl"
+          >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Home
           </Button>

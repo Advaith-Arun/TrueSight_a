@@ -1,3 +1,4 @@
+import Galaxy from "@/components/Galaxy";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +15,7 @@ export default function GradCam() {
   const [results, setResults] = useState<ResultsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Frame scrubber state
   const [currentFrame, setCurrentFrame] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -66,9 +67,20 @@ export default function GradCam() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
+      <div className="min-h-screen relative overflow-hidden bg-black">
+        <Galaxy
+          mouseInteraction={false}
+          mouseRepulsion={false}
+          hueShift={0}
+          density={0.8}
+          glowIntensity={0.4}
+          saturation={1.0}
+          speed={0.8}
+          twinkleIntensity={0.4}
+          transparent={false}
+        />
         <Header />
-        <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-[80vh]">
+        <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-[80vh] relative z-10">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-muted-foreground">Loading Grad-CAM visualizations...</p>
@@ -80,9 +92,20 @@ export default function GradCam() {
 
   if (error || !results) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
+      <div className="min-h-screen relative overflow-hidden bg-black">
+        <Galaxy
+          mouseInteraction={false}
+          mouseRepulsion={false}
+          hueShift={0}
+          density={0.8}
+          glowIntensity={0.4}
+          saturation={1.0}
+          speed={0.8}
+          twinkleIntensity={0.4}
+          transparent={false}
+        />
         <Header />
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8 relative z-10">
           <Card className="border-destructive">
             <CardContent className="pt-6">
               <p className="text-muted-foreground mb-4">{error || "Grad-CAM data not found"}</p>
@@ -99,9 +122,20 @@ export default function GradCam() {
 
   if (!results.gradcam_enabled) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
+      <div className="min-h-screen relative overflow-hidden bg-black">
+        <Galaxy
+          mouseInteraction={false}
+          mouseRepulsion={false}
+          hueShift={0}
+          density={0.8}
+          glowIntensity={0.4}
+          saturation={1.0}
+          speed={0.8}
+          twinkleIntensity={0.4}
+          transparent={false}
+        />
         <Header />
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8 relative z-10">
           <Card>
             <CardContent className="pt-6">
               <p className="text-muted-foreground mb-4">
@@ -125,11 +159,22 @@ export default function GradCam() {
   const avgHeatmap = results.gradcam_avg_heatmap ? results.gradcam_avg_heatmap.split('/').pop() : '';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
+    <div className="min-h-screen relative overflow-hidden bg-black">
+      <Galaxy
+        mouseInteraction={false}
+        mouseRepulsion={false}
+        hueShift={0}
+        density={0.8}
+        glowIntensity={0.4}
+        saturation={1.0}
+        speed={0.8}
+        twinkleIntensity={0.4}
+        transparent={false}
+      />
       <Header />
-      <div className="container mx-auto px-4 py-8 space-y-8">
+      <div className="container mx-auto px-4 py-8 space-y-8 relative z-10">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Grad-CAM Forensic Visualizations</h1>
+          <h1 className="text-3xl font-bold upload-video-glow"><span className="text-white">Grad-CAM</span> <span className="text-red-500 ml-3">Forensic</span> <span className="text-white">Visualizations</span></h1>
           <Button onClick={() => navigate(`/results/${jobId}`)} variant="outline">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Results
