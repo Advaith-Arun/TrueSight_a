@@ -66,6 +66,8 @@ results/*.png
 results/*.txt
 results/*.csv
 results/*.json
+results/*.db
 
 
 /test_single_video.py
+/results/truesight.db

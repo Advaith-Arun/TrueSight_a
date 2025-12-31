@@ -1,120 +1,168 @@
-TrueSight_a/
-├── configs/
-│   ├── config.yaml              # Central configuration
-│   └── paths.py                 # Path configurations
-│
-├── data/                        # Training/test datasets
-│   ├── train/
-│   │   ├── real/
-│   │   │    ├── video_001/
-│   │   │    │   ├── crops/
-│   │   │    │   │   ├── crop_001.jpg
-│   │   │    │   │   ├── crop_002.jpg
-│   │   │    │   │   ├── ...
-│   │   │    │   ├── frame_001.jpg
-│   │   │    │   ├── frame_002.jpg
-│   │   │    │   ├── ....
-│   │   │    ├── video_002/
-│   │   │    ├── ... 
-│   │   ├── fake/
-│   │   │    ├── video_001/
-│   │   │    │   ├── crops/
-│   │   │    │   │   ├── crop_001.jpg
-│   │   │    │   │   ├── crop_002.jpg
-│   │   │    │   │   ├── ...
-│   │   │    │   ├── frame_001.jpg
-│   │   │    │   ├── frame_002.jpg
-│   │   │    │   ├── ....
-│   │   │    ├── video_002/
-│   │   │    ├── ... 
-│   ├── val/
-│   │   ├── real/
-│   │   │    ├── video_001/
-│   │   │    │   ├── crops/
-│   │   │    │   │   ├── crop_001.jpg
-│   │   │    │   │   ├── crop_002.jpg
-│   │   │    │   │   ├── ...
-│   │   │    │   ├── frame_001.jpg
-│   │   │    │   ├── frame_002.jpg
-│   │   │    │   ├── ....
-│   │   │    ├── video_002/
-│   │   │    ├── ... 
-│   │   ├── fake/
-│   │   │    ├── video_001/
-│   │   │    │   ├── crops/
-│   │   │    │   │   ├── crop_001.jpg
-│   │   │    │   │   ├── crop_002.jpg
-│   │   │    │   │   ├── ...
-│   │   │    │   ├── frame_001.jpg
-│   │   │    │   ├── frame_002.jpg
-│   │   │    │   ├── ....
-│   │   │    ├── video_002/
-│   │   │    ├── ... 
-│   └── test/
-│   │   ├── real/
-│   │   │    ├── video_001/
-│   │   │    │   ├── crops/
-│   │   │    │   │   ├── crop_001.jpg
-│   │   │    │   │   ├── crop_002.jpg
-│   │   │    │   │   ├── ...
-│   │   │    │   ├── frame_001.jpg
-│   │   │    │   ├── frame_002.jpg
-│   │   │    │   ├── ....
-│   │   │    ├── video_002/
-│   │   │    ├── ... 
-│   │   ├── fake/
-│   │   │    ├── video_001/
-│   │   │    │   ├── crops/
-│   │   │    │   │   ├── crop_001.jpg
-│   │   │    │   │   ├── crop_002.jpg
-│   │   │    │   │   ├── ...
-│   │   │    │   ├── frame_001.jpg
-│   │   │    │   ├── frame_002.jpg
-│   │   │    │   ├── ....
-│   │   │    ├── video_002/
-│   │   │    ├── ... 
-│
-│
-├── models/
-│   ├── checkpoints/
-│   │   └── best_model.pth      # Trained model (473 MB)
-│   ├── trained/
-│   └── pretrained/
-│
-├── src/
-│   ├── models/                  # Person 1's work
-│   │   ├── spatial_cnn.py      # ResNet-50 branch
-│   │   ├── frequency_cnn.py    # EfficientNet branch
-│   │   ├── spatiotemporal_lstm.py # LSTM branch
-│   │   └── ensemble.py         # Three-stream ensemble
-│   │
-│   ├── preprocessing/           # Person 2's work
-│   │   ├── preprocess_final.py # Complete preprocessing pipeline
-│   │   └── transforms.py       # Image transformations
-│   │
-│   └── app/                     # Person 3's work (YOU)
-│       ├── __init__.py
-│       ├── api.py              # Flask REST API
-│       ├── celery_config.py    # Celery configuration
-│       ├── tasks.py            # Async processing tasks
-│       ├── video_processor.py  # Video processing wrapper
-│       ├── inference.py        # ML inference engine
-│       ├── database.py         # Database models & operations
-│       ├── run_api.py          # API server runner
-│       ├── run_celery.py       # Celery worker runner
-│       ├── uploads/            # Temporary video storage
-│       └── temp_processing/    # Temporary frame storage
-│
-├── results/
-│   └── truesight.db            # SQLite database
-│
-├── testing_files/
-│   ├── test_imports.py
-│   ├── test_video_processor.py
-│   ├── test_inference.py
-│   ├── test_database.py
-│   ├── test_celery_task.py
-│   └── test_api.py
-│
+.
+├── configs
+│   └── config.yaml
+├── data
+│   ├── test
+│   │   ├── fake
+│   │   │   └── fake4.mp4
+│   │   └── real
+│   │       └── id59_0001.mp4
+│   ├── test_manifest.csv
+│   ├── train
+│   │   ├── fake
+│   │   └── real
+│   ├── train_manifest.csv
+│   ├── val
+│   │   ├── fake
+│   │   │   └── id1_id0_0000_fake.mp4
+│   │   └── real
+│   │       └── id1_0000_real.mp4
+│   └── val_manifest.csv
+├── frontend
+│   ├── bun.lockb
+│   ├── components.json
+│   ├── DOCUMENTATION.md
+│   ├── eslint.config.js
+│   ├── index.html
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── postcss.config.js
+│   ├── public
+│   │   ├── placeholder.svg
+│   │   └── robots.txt
+│   ├── README.md
+│   ├── src
+│   │   ├── App.css
+│   │   ├── App.tsx
+│   │   ├── components
+│   │   │   ├── FileUpload.tsx
+│   │   │   ├── Header.tsx
+│   │   │   ├── NavLink.tsx
+│   │   │   └── ui
+│   │   ├── hooks
+│   │   │   ├── use-mobile.tsx
+│   │   │   └── use-toast.ts
+│   │   ├── index.css
+│   │   ├── main.tsx
+│   │   ├── pages
+│   │   │   ├── GradCam.tsx
+│   │   │   ├── Home.tsx
+│   │   │   ├── Index.tsx
+│   │   │   ├── JobHistory.tsx
+│   │   │   ├── NotFound.tsx
+│   │   │   ├── Processing.tsx
+│   │   │   ├── Results.tsx
+│   │   │   └── Upload.tsx
+│   │   └── vite-env.d.ts
+│   ├── tailwind.config.ts
+│   ├── tsconfig.app.json
+│   ├── tsconfig.json
+│   ├── tsconfig.node.json
+│   └── vite.config.ts
+├── LICENSE
+├── logs
+├── models
+│   ├── checkpoints
+│   │   └── best_model.pth
+│   ├── pretrained
+│   └── trained
+├── project-structure-to-feed-into-AI.txt
+├── README.md
 ├── requirements.txt
-└── README.md
+├── results
+│   ├── gradcam
+│   │   ├── 43283b8b-47bd-44c7-bee2-d43cedf84b00
+│   │   │   ├── average_heatmap.jpg
+│   │   │   └── overlays
+│   │   ├── 8083acb4-a3db-4342-8ef3-4aed969f58bd
+│   │   │   ├── average_heatmap.jpg
+│   │   │   └── overlays
+│   │   ├── a2f76682-642a-49d3-9c0e-b8dbe52f87c6
+│   │   │   ├── average_heatmap.jpg
+│   │   │   └── overlays
+│   │   └── a4faa388-9300-4cd1-a15a-3fca04f5cbac
+│   │       ├── average_heatmap.jpg
+│   │       └── overlays
+│   ├── gradcam_test
+│   ├── metrics.txt
+│   └── truesight.db
+├── setup_env.sh
+├── src
+│   ├── app
+│   │   ├── api.py
+│   │   ├── celery_config.py
+│   │   ├── components
+│   │   │   ├── __init__.py
+│   │   │   ├── metrics_display.py
+│   │   │   └── video_player.py
+│   │   ├── config_loader.py
+│   │   ├── database.py
+│   │   ├── gradcam.py
+│   │   ├── inference.py
+│   │   ├── __init__.py
+│   │   ├── migrate_database.py
+│   │   ├── pages
+│   │   │   ├── explainability.py
+│   │   │   ├── __init__.py
+│   │   │   ├── results.py
+│   │   │   ├── upload.py
+│   │   │   └── user_guide.py
+│   │   ├── run_api.py
+│   │   ├── run_celery.py
+│   │   ├── streamlit_app.py
+│   │   ├── tasks.py
+│   │   ├── temp_processing
+│   │   │   ├── 08cf1708-e7b7-4750-a912-5181d63947cf
+│   │   │   ├── 7d3515e8-77a9-42d6-bc14-114a9c84dce2
+│   │   │   ├── 8b0be326-803f-437c-8435-212738c9877e
+│   │   │   ├── fdf14788-5d53-43fc-82a4-9245a1038786
+│   │   │   └── id59_0001
+│   │   ├── uploads
+│   │   ├── video_processor.py
+│   │   └── video_processor.py.backup_20251116_154307
+│   ├── __init__.py
+│   ├── models
+│   │   ├── ensemble.py
+│   │   ├── frequency_cnn.py
+│   │   ├── __init__.py
+│   │   ├── spatial_cnn.py
+│   │   └── spatiotemporal_lstm.py
+│   ├── preprocessing
+│   │   ├── dataset.py
+│   │   ├── __init__.py
+│   │   └── preprocess_final.py
+│   ├── training
+│   │   ├── evaluate.py
+│   │   ├── __init__.py
+│   │   └── train.py
+│   └── utils
+│       ├── device.py
+│       ├── __init__.py
+│       ├── metrics.py
+│       └── visualization.py
+├── test_data_processed
+│   ├── test
+│   ├── test_manifest.csv
+│   ├── train
+│   ├── train_manifest.csv
+│   ├── val
+│   │   └── real
+│   │       └── id59_0001
+│   └── val_manifest.csv
+├── test_gradcam_integration.py
+├── test_gradcam_with_video.py
+├── testing_files
+│   ├── conftest.py
+│   ├── debug_training.py
+│   ├── test_api.py
+│   ├── test_celery_task.py
+│   ├── test_config.py
+│   ├── test_database.py
+│   ├── test_dataset_loader.py
+│   ├── test_gpu.py
+│   ├── test_gradcam.py
+│   ├── test_imports.py
+│   ├── test_inference.py
+│   ├── test_video_processor.py
+│   └── verify_env.py
+└── test_single_video.py
