@@ -6,6 +6,23 @@
 - Advaith Arun Kashyap (Advaith-Arun)
 - Akanksha Lakshmi Acharya (akankshaa0205)
 
+## Project Description
+TrueSight is a production-ready deepfake detection system that achieves 87% validation accuracy and 84% Recall on FaceForensics++ and Celeb-DF datasets through advanced spatiotemporal modeling and robust preprocessing.
+
+## Key Features
+1. Face-Centric Preprocessing using MTCNN for 3-5% accuracy boost.
+2. Multi-Modal Architecture:
+  - Spatial CNN (ResNet-50)
+  - Frequency CNN (EfficientNet-B0)
+  - Spatiotemporal LSTM (Bi-LSTM)
+  - Late fusion ensemble
+3. Video Training Set:
+  - 1000 Videos from FaceForensics++: https://www.kaggle.com/datasets/xdxd003/ff-c23
+  - 6,229 Videos from Celeb-DF (v2): https://www.kaggle.com/datasets/reubensuju/celeb-df-v2
+4. Strong Data Augmentation (rotation, color jitter, compression simulation)
+5. Optimized Training with NVIDIA GeForce RTX 4060
+6. Config-Driven (YAML for easy hyperparameter tuning)
+
 ## Quick Start
 
 ### 1. Clone Repository
